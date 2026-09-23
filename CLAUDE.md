@@ -16,9 +16,9 @@ Bu dosyadaki "Netleşen kararlar" plan ile çelişirse **bu dosya geçerlidir** 
 
 | Faz | Konu | Durum |
 |---|---|---|
-| 0 | İskelet + tasarım sistemi | ✅ Tamamlandı (onay bekliyor) |
-| 1 | Üyelik (kayıt/giriş/çıkış) | ⏭ Sıradaki |
-| 2 | Anket oluşturma + akış | — |
+| 0 | İskelet + tasarım sistemi | ✅ Tamamlandı |
+| 1 | Üyelik (kayıt/giriş/çıkış) | ✅ Tamamlandı (onay bekliyor) |
+| 2 | Anket oluşturma + akış | ⏭ Sıradaki |
 | 3 | Oy verme + sonuçlar | — |
 | 4 | Supabase + Vercel deploy | — |
 | 5 | Cilalama | — |
@@ -39,7 +39,7 @@ Bir faz bittiğinde bu tabloyu güncelle.
 ## Geçici şeyler (unutma)
 
 - `templates/polls/poll_list.html` içindeki **"Tasarım önizlemesi"** kartları sadece Faz 0 içindir → **Faz 2'de kaldır.**
-- `templates/partials/navbar.html` ve `poll_list.html` içindeki linkler sabit yazıldı (`/giris/`, `/kayit/`, `/anket/yeni/`) → ilgili URL'ler eklenince `{% url %}` etiketine çevir (Faz 1–2).
+- `navbar.html` ve `poll_list.html` içindeki `/anket/yeni/` linki sabit yazıldı → Faz 2'de `{% url 'poll_create' %}` yap. (Giriş/kayıt/çıkış linkleri Faz 1'de `{% url %}`'e çevrildi.)
 - `polls/models.py` ve `polls/admin.py` şimdilik boş → Faz 2 ve 3'te dolar.
 
 ## Yapı
@@ -56,6 +56,10 @@ docs/          KARARSIZIM_PLAN.md
 - Ayarlar ortam değişkenlerinden okunur (`.env`, python-dotenv). `DATABASE_URL` yoksa SQLite; varsa Supabase (transaction pooler, `conn_max_age=0`, `DISABLE_SERVER_SIDE_CURSORS`).
 - `DEBUG=False` iken `DJANGO_SECRET_KEY` zorunlu, yoksa uygulama başlamaz.
 - Statik dosyalar WhiteNoise ile, `WHITENOISE_USE_FINDERS = True` (collectstatic gerekmez).
+- Giriş: `accounts.backends.EmailBackend` (`authenticate(request, email=..., password=...)`), ardından `ModelBackend` (admin kullanıcı adıyla girer). `login()` çağrılarında `backend="accounts.backends.EmailBackend"` verilir.
+- Formlar `templates/partials/field.html` (etiket, input, yardım, hata) ve `partials/form_errors.html` ile çizilir; yeni formlarda da bunları kullan.
+- `?next=` sadece `url_has_allowed_host_and_scheme` ile doğrulanarak kullanılır (`accounts/views.py::_safe_next`).
+- Çıkış sadece POST (navbar'da küçük form).
 - `main.js` içinde global `getCookie(name)` var; AJAX'ta CSRF token'ı `X-CSRFToken` header'ına koymak için kullan.
 - Seçenek renkleri: seçenek elemanına `opt-1`…`opt-5` sınıfı verilir (order 0→`opt-1`); bileşenler `--c` / `--c-soft` değişkenlerini kullanır.
 

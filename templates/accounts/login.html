@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Giriş yap — Kararsızım{% endblock %}
+
+{% block content %}
+<section class="card auth-card">
+  <h1 class="auth-card__title">Tekrar hoş geldin 👋</h1>
+  <p class="auth-card__lead">
+    {% if next %}Devam etmek için giriş yapman gerekiyor.{% else %}E-postan ve parolanla giriş yap.{% endif %}
+  </p>
+
+  <form method="post" class="form" novalidate>
+    {% csrf_token %}
+    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+    {% include "partials/form_errors.html" %}
+    {% include "partials/field.html" with field=form.email %}
+    {% include "partials/field.html" with field=form.password %}
+    <button type="submit" class="btn btn-primary btn-lg btn-block">Giriş yap</button>
+  </form>
+
+  <p class="auth-card__switch">
+    Hesabın yok mu?
+    <a href="{% url 'register' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Kayıt ol</a>
+  </p>
+</section>
+{% endblock %}

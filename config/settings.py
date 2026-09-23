@@ -4,6 +4,7 @@ All environment-specific values are read from environment variables
 (a local `.env` file is loaded via python-dotenv).
 """
 import os
+import warnings
 from pathlib import Path
 
 import dj_database_url
@@ -94,6 +95,15 @@ else:
 
 AUTH_USER_MODEL = "accounts.User"
 
+# Site login uses email + password; ModelBackend keeps username login for /admin/.
+AUTHENTICATION_BACKENDS = [
+    "accounts.backends.EmailBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+LOGIN_URL = "/giris/"
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/"
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {
@@ -114,5 +124,7 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 # Serve files straight from static/ without a collectstatic step (prototype).
 WHITENOISE_USE_FINDERS = True
+# STATIC_ROOT only exists after collectstatic, which we skip; silence WhiteNoise's warning.
+warnings.filterwarnings("ignore", message="No directory at", category=UserWarning)
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
