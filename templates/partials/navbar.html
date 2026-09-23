@@ -1,0 +1,15 @@
+{# Auth links point to the Phase 1 URLs; they are switched to {% url %} tags then. #}
+<header class="navbar">
+  <nav class="container navbar__inner" aria-label="Ana menü">
+    <a href="/" class="logo"><span class="text-gradient">kararsızım</span> <span aria-hidden="true">🤔</span></a>
+    <div class="navbar__actions">
+      {% if user.is_authenticated %}
+        <span class="navbar__user">@{{ user.username }}</span>
+        <a href="/anket/yeni/" class="btn btn-primary btn-sm">Anket oluştur</a>
+      {% else %}
+        <a href="/giris/" class="btn btn-ghost btn-sm">Giriş</a>
+        <a href="/kayit/" class="btn btn-primary btn-sm">Kayıt ol</a>
+      {% endif %}
+    </div>
+  </nav>
+</header>
