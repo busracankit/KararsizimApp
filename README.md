@@ -1,7 +1,7 @@
 # Kararsızım 🤔
 
 Kararsız kaldığın konularda anket aç, herkes oylasın. Django 5.2 + saf HTML/CSS/JS.
-Veritabanı: Supabase (Postgres) · Yayın: Vercel.
+Veritabanı: Supabase (Postgres) · Yayın: Vercel → **https://kararsizim-liard.vercel.app**
 Proje planı ve fazlar: [`docs/KARARSIZIM_PLAN.md`](docs/KARARSIZIM_PLAN.md)
 
 ## Yerel kurulum
