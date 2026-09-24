@@ -1,0 +1,11 @@
+{% load poll_extras %}
+{% with error=form.option_errors|get_item:index %}
+<li class="option-input opt-{{ number }}{% if error %} has-error{% endif %}" data-option-row>
+  <label class="visually-hidden" for="option-{{ index }}" data-option-label>Seçenek {{ number }}</label>
+  <span class="option-input__dot" aria-hidden="true"></span>
+  <input type="text" name="options" id="option-{{ index }}" value="{{ value }}" maxlength="100"
+         placeholder="Seçenek {{ number }}" autocomplete="off"{% if error %} aria-invalid="true"{% endif %}>
+  <button type="button" class="option-input__remove" data-remove-option hidden aria-label="Seçenek {{ number }}'i sil">✕</button>
+  {% if error %}<p class="field-error option-input__error">{{ error }}</p>{% endif %}
+</li>
+{% endwith %}

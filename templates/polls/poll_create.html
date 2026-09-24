@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Yeni anket — Kararsızım{% endblock %}
+
+{% block content %}
+<section class="card form-card">
+  <h1 class="auth-card__title">Neye karar veremiyorsun? 🤔</h1>
+  <p class="auth-card__lead">Soruyu yaz, {{ min_options }}–{{ max_options }} seçenek ekle, gerisini topluluğa bırak.</p>
+
+  <form method="post" class="form" novalidate data-poll-form data-min="{{ min_options }}" data-max="{{ max_options }}">
+    {% csrf_token %}
+    {% include "partials/field.html" with field=form.question %}
+
+    <fieldset class="options-field{% if form.options_error %} has-error{% endif %}">
+      <legend>Seçenekler</legend>
+      {% if form.options_error %}<p class="field-error" role="alert">{{ form.options_error }}</p>{% endif %}
+      <ol class="option-inputs" data-option-list>
+        {% for value in form.option_values %}
+          {% include "polls/_option_input.html" with index=forloop.counter0 number=forloop.counter %}
+        {% endfor %}
+      </ol>
+      <button type="button" class="btn btn-ghost btn-sm add-option" data-add-option hidden>+ Seçenek ekle</button>
+      <p class="field-help" data-option-hint>En fazla {{ max_options }} seçenek. Boş bıraktığın alanlar eklenmez.</p>
+    </fieldset>
+
+    <button type="submit" class="btn btn-primary btn-lg btn-block">Anketi yayınla</button>
+  </form>
+</section>
+
+{# Blueprint cloned by poll_form.js when a new option is added. #}
+<template id="option-input-template">
+  {% include "polls/_option_input.html" with index="__i__" number="__n__" value="" %}
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/poll_form.js' %}" defer></script>
+{% endblock %}

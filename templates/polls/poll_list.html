@@ -1,50 +1,41 @@
 {% extends "base.html" %}
 
 {% block content %}
+{% if page.number == 1 %}
 <section class="hero">
   <h1 class="hero__title">Kararsız mı kaldın? <span class="text-gradient">Sor, herkes oylasın.</span></h1>
   <p class="hero__text">Aklındaki seçenekleri yaz, topluluk senin yerine karar versin.</p>
-  <a href="/anket/yeni/" class="btn btn-primary btn-lg">Anket Oluştur</a>
+  <a href="{% url 'poll_create' %}" class="btn btn-primary btn-lg">Anket Oluştur</a>
 </section>
+{% endif %}
 
-<section class="card empty-state">
-  <div class="empty-state__icon" aria-hidden="true">🗳️</div>
-  <p class="empty-state__text">Henüz anket yok. İlk kararsızlığı sen paylaş ✨</p>
-  <a href="/anket/yeni/" class="btn btn-primary">Anket Oluştur</a>
-</section>
+{% for poll in page.object_list %}
+  {% include "partials/poll_card.html" %}
+{% empty %}
+  <section class="card empty-state">
+    <div class="empty-state__icon" aria-hidden="true">🗳️</div>
+    <p class="empty-state__text">Henüz anket yok. İlk kararsızlığı sen paylaş ✨</p>
+    <a href="{% url 'poll_create' %}" class="btn btn-primary">Anket Oluştur</a>
+  </section>
+{% endfor %}
 
-{# Phase 0 only: static preview of the poll card styles. Removed in Phase 2. #}
-<p class="section-label">Tasarım önizlemesi</p>
-<article class="card poll-card">
-  <div class="poll-card__meta"><span class="poll-card__author">@ornek_kullanici</span> · 5 dakika önce</div>
-  <h2 class="poll-card__question">Bugün sinemaya mı gitsem, restorana mı?</h2>
-  <div class="options">
-    <button type="button" class="option opt-1">Sinema 🎬</button>
-    <button type="button" class="option opt-2">Restoran 🍝</button>
-    <button type="button" class="option opt-3">Evde film + pizza</button>
-    <button type="button" class="option opt-4">Sahilde yürüyüş</button>
-    <button type="button" class="option opt-5">Hepsi olmasın, uyuyayım</button>
-  </div>
-  <div class="poll-card__footer">0 oy</div>
-</article>
-
-<article class="card poll-card">
-  <div class="poll-card__meta"><span class="poll-card__author">@ornek_kullanici</span> · 2 saat önce</div>
-  <h2 class="poll-card__question">Hafta sonu hangi şehre gitsem?</h2>
-  <ul class="results">
-    <li class="result opt-1 is-winner is-mine">
-      <div class="result__row"><span class="result__label">Eskişehir <span class="result__mine">Senin oyun ✓</span></span><span class="result__meta">%58 · 7 oy</span></div>
-      <div class="result__track"><div class="result__fill" style="width:58%"></div></div>
-    </li>
-    <li class="result opt-2">
-      <div class="result__row"><span class="result__label">Bursa</span><span class="result__meta">%25 · 3 oy</span></div>
-      <div class="result__track"><div class="result__fill" style="width:25%"></div></div>
-    </li>
-    <li class="result opt-3">
-      <div class="result__row"><span class="result__label">Sapanca</span><span class="result__meta">%17 · 2 oy</span></div>
-      <div class="result__track"><div class="result__fill" style="width:17%"></div></div>
-    </li>
-  </ul>
-  <div class="poll-card__footer">12 oy</div>
-</article>
+{% if page.has_other_pages %}
+<nav class="pagination" aria-label="Sayfalar">
+  {% if page.has_previous %}
+    <a class="pagination__link" href="?sayfa={{ page.previous_page_number }}" rel="prev">‹ Önceki</a>
+  {% endif %}
+  {% for number in page_range %}
+    {% if number == page.paginator.ELLIPSIS %}
+      <span class="pagination__gap">…</span>
+    {% elif number == page.number %}
+      <span class="pagination__link is-current" aria-current="page">{{ number }}</span>
+    {% else %}
+      <a class="pagination__link" href="?sayfa={{ number }}">{{ number }}</a>
+    {% endif %}
+  {% endfor %}
+  {% if page.has_next %}
+    <a class="pagination__link" href="?sayfa={{ page.next_page_number }}" rel="next">Sonraki ›</a>
+  {% endif %}
+</nav>
+{% endif %}
 {% endblock %}

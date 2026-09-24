@@ -1,0 +1,14 @@
+{% load poll_extras %}
+{# One poll in the feed. Voting arrives in Phase 3; options are shown but not clickable yet. #}
+<article class="card poll-card">
+  <div class="poll-card__meta">
+    <span class="poll-card__author">@{{ poll.author.username }}</span> ·
+    <time datetime="{{ poll.created_at|date:'c' }}" title="{{ poll.created_at|date:'j F Y H:i' }}">{{ poll.created_at|relative_time }}</time>
+  </div>
+  <h2 class="poll-card__question"><a href="{{ poll.get_absolute_url }}">{{ poll.question }}</a></h2>
+  <div class="options">
+    {% for option in poll.options.all %}
+      <button type="button" class="option {{ option.color_class }}" disabled>{{ option.text }}</button>
+    {% endfor %}
+  </div>
+</article>

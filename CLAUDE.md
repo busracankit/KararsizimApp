@@ -17,9 +17,9 @@ Bu dosyadaki "Netleşen kararlar" plan ile çelişirse **bu dosya geçerlidir** 
 | Faz | Konu | Durum |
 |---|---|---|
 | 0 | İskelet + tasarım sistemi | ✅ Tamamlandı |
-| 1 | Üyelik (kayıt/giriş/çıkış) | ✅ Tamamlandı (onay bekliyor) |
-| 2 | Anket oluşturma + akış | ⏭ Sıradaki |
-| 3 | Oy verme + sonuçlar | — |
+| 1 | Üyelik (kayıt/giriş/çıkış) | ✅ Tamamlandı |
+| 2 | Anket oluşturma + akış | ✅ Tamamlandı (onay bekliyor) |
+| 3 | Oy verme + sonuçlar | ⏭ Sıradaki |
 | 4 | Supabase + Vercel deploy | — |
 | 5 | Cilalama | — |
 
@@ -38,9 +38,8 @@ Bir faz bittiğinde bu tabloyu güncelle.
 
 ## Geçici şeyler (unutma)
 
-- `templates/polls/poll_list.html` içindeki **"Tasarım önizlemesi"** kartları sadece Faz 0 içindir → **Faz 2'de kaldır.**
-- `navbar.html` ve `poll_list.html` içindeki `/anket/yeni/` linki sabit yazıldı → Faz 2'de `{% url 'poll_create' %}` yap. (Giriş/kayıt/çıkış linkleri Faz 1'de `{% url %}`'e çevrildi.)
-- `polls/models.py` ve `polls/admin.py` şimdilik boş → Faz 2 ve 3'te dolar.
+- Akış kartlarında ve detay sayfasında seçenekler `<button disabled>` olarak çiziliyor (oy verme yok) → **Faz 3'te** oy formuna çevir (`partials/poll_card.html`, `polls/poll_detail.html`).
+- Kartlarda toplam oy sayısı yok → Faz 3'te `annotate(total_votes=Count("votes"))` ile ekle.
 
 ## Yapı
 
@@ -57,6 +56,9 @@ docs/          KARARSIZIM_PLAN.md
 - `DEBUG=False` iken `DJANGO_SECRET_KEY` zorunlu, yoksa uygulama başlamaz.
 - Statik dosyalar WhiteNoise ile, `WHITENOISE_USE_FINDERS = True` (collectstatic gerekmez).
 - Giriş: `accounts.backends.EmailBackend` (`authenticate(request, email=..., password=...)`), ardından `ModelBackend` (admin kullanıcı adıyla girer). `login()` çağrılarında `backend="accounts.backends.EmailBackend"` verilir.
+- Anket formu: seçenekler tekrar eden `options` input'ları olarak gelir (`request.POST.getlist("options")`), `PollCreateForm` boşları atar, 2–5 / ≤100 karakter / tekrar yok kuralını uygular. Tekrar kontrolü Türkçe İ/ı'ya duyarlı (`polls/forms.py::comparison_key`). Kayıt `transaction.atomic` içinde.
+- Seçenek rengi: `Option.color_class` (`opt-1`…`opt-5`). Göreli zaman: `{% load poll_extras %}` + `|relative_time` ("az önce", "5 dakika önce").
+- Akış: `?sayfa=N`, sayfa başına 10, `select_related("author").prefetch_related("options")` — sorgu sayısı anket sayısıyla artmamalı (testi var).
 - Formlar `templates/partials/field.html` (etiket, input, yardım, hata) ve `partials/form_errors.html` ile çizilir; yeni formlarda da bunları kullan.
 - `?next=` sadece `url_has_allowed_host_and_scheme` ile doğrulanarak kullanılır (`accounts/views.py::_safe_next`).
 - Çıkış sadece POST (navbar'da küçük form).
