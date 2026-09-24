@@ -19,8 +19,8 @@ Bu dosyadaki "Netleşen kararlar" plan ile çelişirse **bu dosya geçerlidir** 
 | 0 | İskelet + tasarım sistemi | ✅ Tamamlandı |
 | 1 | Üyelik (kayıt/giriş/çıkış) | ✅ Tamamlandı |
 | 2 | Anket oluşturma + akış | ✅ Tamamlandı |
-| 3 | Oy verme + sonuçlar | ✅ Tamamlandı (onay bekliyor) |
-| 4 | Supabase + Vercel deploy | ⏭ Sıradaki |
+| 3 | Oy verme + sonuçlar | ✅ Tamamlandı |
+| 4 | Supabase + Vercel deploy | 🚧 Devam ediyor |
 | 5 | Cilalama | — |
 
 Çalışma şekli: **faz faz.** Bir faz bitince kontroller + özet verilir, kullanıcı onaylamadan sonraki faza geçilmez.
@@ -40,6 +40,14 @@ Bir faz bittiğinde bu tabloyu güncelle.
 ## Geçici şeyler (unutma)
 
 - Şu an yok.
+
+## Canlı ortam
+
+- **Supabase:** proje `kararsizim`, ref `mzggagkmnkajelekvnxr`, bölge eu-central-1 (Frankfurt), org `team1` (free).
+  `public` şemasındaki her yeni tabloda RLS'i otomatik açan event trigger (`ensure_rls` → `public.rls_auto_enable()`) kurulu; policy yok.
+- **Vercel:** Django zero-config (manage.py'den algılanır, collectstatic build'de otomatik). `vercel.json` sadece `regions: ["fra1"]` (DB ile aynı bölge).
+- Migration'lar build'de değil, geliştirici makinesinden `DATABASE_URL=... python manage.py migrate` ile.
+- Gizli değerler (`DJANGO_SECRET_KEY`, `DATABASE_URL`) Vercel'e kullanıcı tarafından girilir; Claude parola/anahtar girmez.
 
 ## Yapı
 

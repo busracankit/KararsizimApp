@@ -123,9 +123,33 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
-# Serve files straight from static/ without a collectstatic step (prototype).
+# Locally WhiteNoise serves files straight from static/ (no collectstatic needed).
+# On Vercel, collectstatic runs automatically at build time and /static/ is served by the CDN.
 WHITENOISE_USE_FINDERS = True
-# STATIC_ROOT only exists after collectstatic, which we skip; silence WhiteNoise's warning.
+# STATIC_ROOT only exists after collectstatic; silence WhiteNoise's warning when it's missing.
 warnings.filterwarnings("ignore", message="No directory at", category=UserWarning)
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# --- Production (DEBUG=False, e.g. on Vercel) -------------------------------
+if not DEBUG:
+    # Vercel terminates HTTPS and forwards the original scheme in this header.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = True
+    # *.vercel.app already sends HSTS; set SECURE_HSTS_SECONDS when a custom domain is added.
+    SILENCED_SYSTEM_CHECKS = ["security.W004"]
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = "same-origin"
+
+# Send errors to stderr so they show up in Vercel's runtime logs.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "root": {"handlers": ["console"], "level": "WARNING"},
+    "loggers": {
+        "django": {"handlers": ["console"], "level": "INFO" if DEBUG else "WARNING", "propagate": False},
+    },
+}
