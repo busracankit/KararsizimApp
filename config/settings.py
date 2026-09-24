@@ -83,7 +83,14 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # Database: Supabase Postgres when DATABASE_URL is set, otherwise local SQLite.
 if os.environ.get("DATABASE_URL"):
-    DATABASES = {"default": dj_database_url.config(conn_max_age=0, ssl_require=True)}
+    try:
+        DATABASES = {"default": dj_database_url.config(conn_max_age=0, ssl_require=True)}
+    except ValueError as error:
+        # Never echo the URL itself: it contains the database password.
+        raise ImproperlyConfigured(
+            "DATABASE_URL geçersiz. Kontrol et: parolanın etrafında [ ] kalmamalı, adres tırnak içinde "
+            "olmamalı, parolada @ : / ? # % [ ] gibi karakterler varsa URL-kodlanmalı (ör. @ -> %40)."
+        ) from error
     # Required for Supabase's transaction pooler (PgBouncer, port 6543).
     DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
 else:
