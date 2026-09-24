@@ -1,7 +1,7 @@
 {% load poll_extras %}
 <article class="card poll-card">
   <div class="poll-card__meta">
-    <span class="poll-card__author">@{{ poll.author.username }}</span> ·
+    <a class="poll-card__author" href="{% url 'user_profile' poll.author.username %}">@{{ poll.author.username }}</a> ·
     <time datetime="{{ poll.created_at|date:'c' }}" title="{{ poll.created_at|date:'j F Y H:i' }}">{{ poll.created_at|relative_time }}</time>
   </div>
   <h2 class="poll-card__question"><a href="{{ poll.get_absolute_url }}">{{ poll.question }}</a></h2>

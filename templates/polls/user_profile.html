@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}@{{ profile_user.username }} — Kararsızım{% endblock %}
+{% block description %}@{{ profile_user.username }} kullanıcısının anketleri.{% endblock %}
+{% block og_title %}@{{ profile_user.username }} — Kararsızım{% endblock %}
+{% block og_description %}@{{ profile_user.username }} kullanıcısının anketleri. Sen de oy ver!{% endblock %}
+
+{% block content %}
+<section class="profile-header">
+  <div class="profile-header__avatar" aria-hidden="true">{{ profile_user.username|first|upper }}</div>
+  <div>
+    <h1 class="profile-header__name">@{{ profile_user.username }}</h1>
+    <p class="profile-header__meta">
+      Üyelik: {{ profile_user.date_joined|date:"F Y" }} · {{ page.paginator.count }} anket
+    </p>
+  </div>
+</section>
+
+{% for poll in page.object_list %}
+  {% include "partials/poll_card.html" %}
+{% empty %}
+  <section class="card empty-state">
+    <div class="empty-state__icon" aria-hidden="true">🤔</div>
+    {% if user == profile_user %}
+      <p class="empty-state__text">Henüz anket açmadın. İlk kararsızlığını paylaş ✨</p>
+      <a href="{% url 'poll_create' %}" class="btn btn-primary">Anket Oluştur</a>
+    {% else %}
+      <p class="empty-state__text">@{{ profile_user.username }} henüz anket açmamış.</p>
+    {% endif %}
+  </section>
+{% endfor %}
+
+{% include "partials/pagination.html" %}
+{% endblock %}

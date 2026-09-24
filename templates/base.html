@@ -5,6 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Kararsızım — Sor, herkes oylasın{% endblock %}</title>
   <meta name="description" content="{% block description %}Kararsız mı kaldın? Anket aç, herkes oylasın.{% endblock %}">
+  <meta name="theme-color" content="#7C3AED">
+  {% if request %}<link rel="canonical" href="{{ request.build_absolute_uri }}">{% endif %}
+
+  {# Open Graph / link previews (WhatsApp, X, Slack…) #}
+  <meta property="og:site_name" content="Kararsızım">
+  <meta property="og:locale" content="tr_TR">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{% block og_title %}Kararsızım — Sor, herkes oylasın{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}Kararsız mı kaldın? Anket aç, herkes oylasın.{% endblock %}">
+  {% if request %}<meta property="og:url" content="{{ request.build_absolute_uri }}">{% endif %}
+  <meta name="twitter:card" content="summary">
+
   <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,8 +25,9 @@
   {% block extra_head %}{% endblock %}
 </head>
 <body>
+  <a class="skip-link" href="#main">İçeriğe geç</a>
   {% include "partials/navbar.html" %}
-  <main class="container" id="main">
+  <main class="container" id="main" tabindex="-1">
     {% include "partials/messages.html" %}
     {% block content %}{% endblock %}
   </main>

@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
@@ -12,6 +13,13 @@ from .services import build_results, existing_vote, polls_with_counts, votes_by_
 
 POLLS_PER_PAGE = 10
 
+# ?sirala= values for the feed tabs -> ordering
+SORTS = {
+    "yeni": ("-created_at", "-id"),
+    "populer": ("-total_votes", "-created_at", "-id"),
+}
+DEFAULT_SORT = "yeni"
+
 
 def _attach_vote_state(request, polls):
     """Set poll.has_voted and poll.results (when voted) for rendering cards."""
@@ -22,11 +30,31 @@ def _attach_vote_state(request, polls):
             poll.results = build_results(poll, voted[poll.pk])
 
 
-def poll_list(request):
-    page = Paginator(polls_with_counts(), POLLS_PER_PAGE).get_page(request.GET.get("sayfa"))
+def _paginate(request, queryset):
+    page = Paginator(queryset, POLLS_PER_PAGE).get_page(request.GET.get("sayfa"))
     _attach_vote_state(request, page.object_list)
     page_range = page.paginator.get_elided_page_range(page.number, on_each_side=1, on_ends=1)
-    return render(request, "polls/poll_list.html", {"page": page, "page_range": page_range})
+    return page, page_range
+
+
+def poll_list(request):
+    sort = request.GET.get("sirala", DEFAULT_SORT)
+    if sort not in SORTS:
+        sort = DEFAULT_SORT
+    page, page_range = _paginate(request, polls_with_counts().order_by(*SORTS[sort]))
+    return render(request, "polls/poll_list.html", {"page": page, "page_range": page_range, "sort": sort})
+
+
+def user_profile(request, username):
+    """Public profile: username, join date and the user's polls. Never shows the email."""
+    profile_user = get_object_or_404(get_user_model(), username__iexact=username, is_active=True)
+    polls = polls_with_counts().filter(author=profile_user)
+    page, page_range = _paginate(request, polls)
+    return render(
+        request,
+        "polls/user_profile.html",
+        {"profile_user": profile_user, "page": page, "page_range": page_range},
+    )
 
 
 def poll_detail(request, pk):
@@ -47,6 +75,17 @@ def poll_create(request):
         "polls/poll_create.html",
         {"form": form, "min_options": MIN_OPTIONS, "max_options": MAX_OPTIONS},
     )
+
+
+@login_required
+def poll_delete(request, pk):
+    """Authors can delete their own poll after a confirmation step (POST only deletes)."""
+    poll = get_object_or_404(polls_with_counts(), pk=pk, author=request.user)
+    if request.method == "POST":
+        poll.delete()
+        messages.success(request, "Anketin silindi.")
+        return redirect("user_profile", username=request.user.username)
+    return render(request, "polls/poll_confirm_delete.html", {"poll": poll})
 
 
 def _wants_json(request):

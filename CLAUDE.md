@@ -20,8 +20,8 @@ Bu dosyadaki "Netleşen kararlar" plan ile çelişirse **bu dosya geçerlidir** 
 | 1 | Üyelik (kayıt/giriş/çıkış) | ✅ Tamamlandı |
 | 2 | Anket oluşturma + akış | ✅ Tamamlandı |
 | 3 | Oy verme + sonuçlar | ✅ Tamamlandı |
-| 4 | Supabase + Vercel deploy | ✅ Tamamlandı (onay bekliyor) |
-| 5 | Cilalama | ⏭ Sıradaki |
+| 4 | Supabase + Vercel deploy | ✅ Tamamlandı |
+| 5 | Cilalama | ✅ Tamamlandı (onay bekliyor) — prototip bitti; sonrası için plan §12 Backlog |
 
 Çalışma şekli: **faz faz.** Bir faz bitince kontroller + özet verilir, kullanıcı onaylamadan sonraki faza geçilmez.
 Bir faz bittiğinde bu tabloyu güncelle.
@@ -72,6 +72,8 @@ docs/          KARARSIZIM_PLAN.md
 - Oylama: `polls/middleware.py` her tarayıcıya `kararsizim_vid` (UUID4) çerezi verir → `request.voter_token`. `POST /anket/<id>/oy/` `Accept: application/json` ise plan §5.2 JSON'u döner, değilse detay sayfasına redirect + mesaj. Sayım/yüzde/"oy verdi mi" mantığı `polls/services.py` içinde (`polls_with_counts`, `build_results`, `votes_by_poll`).
 - **Dikkat:** `annotate(Count(...))` olan sorgularda `Meta.ordering` uygulanmaz → `order_by` açıkça yazılmalı (`polls_with_counts`).
 - Kart/detay ortak gövdesi: `partials/poll_body.html` (oy formu ya da `partials/poll_results.html`). `vote.js` aynı sonuç HTML'ini JS ile üretir; birini değiştirirsen diğerini de değiştir.
+- Faz 5: `/kullanici/<username>/` profil (iexact, aktif kullanıcı), `/anket/<id>/sil/` (sadece yazar, GET onay / POST siler, başkasına 404), akış sekmeleri `?sirala=yeni|populer`, sayfalama parçası `partials/pagination.html` (`extra_query`), `404.html`/`500.html`, Open Graph blokları (`og_title`, `og_description`), skip link.
+- Buton gradyanı #7C3AED → #DB2777 (beyaz yazı AA ≥4.5:1). `--accent` #EC4899 sadece dekoratif.
 - Formlar `templates/partials/field.html` (etiket, input, yardım, hata) ve `partials/form_errors.html` ile çizilir; yeni formlarda da bunları kullan.
 - `?next=` sadece `url_has_allowed_host_and_scheme` ile doğrulanarak kullanılır (`accounts/views.py::_safe_next`).
 - Çıkış sadece POST (navbar'da küçük form).

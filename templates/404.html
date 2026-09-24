@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Sayfa bulunamadı — Kararsızım{% endblock %}
+
+{% block content %}
+<section class="card error-page">
+  <div class="error-page__code text-gradient">404</div>
+  <h1 class="error-page__title">Burada bir şey yok 🤷</h1>
+  <p class="error-page__text">Aradığın sayfa silinmiş ya da hiç var olmamış olabilir. Belki anket sahibi kararını vermiştir?</p>
+  <a href="{% url 'poll_list' %}" class="btn btn-primary">Ana sayfaya dön</a>
+</section>
+{% endblock %}
