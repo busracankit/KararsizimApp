@@ -18,9 +18,9 @@ Bu dosyadaki "Netleşen kararlar" plan ile çelişirse **bu dosya geçerlidir** 
 |---|---|---|
 | 0 | İskelet + tasarım sistemi | ✅ Tamamlandı |
 | 1 | Üyelik (kayıt/giriş/çıkış) | ✅ Tamamlandı |
-| 2 | Anket oluşturma + akış | ✅ Tamamlandı (onay bekliyor) |
-| 3 | Oy verme + sonuçlar | ⏭ Sıradaki |
-| 4 | Supabase + Vercel deploy | — |
+| 2 | Anket oluşturma + akış | ✅ Tamamlandı |
+| 3 | Oy verme + sonuçlar | ✅ Tamamlandı (onay bekliyor) |
+| 4 | Supabase + Vercel deploy | ⏭ Sıradaki |
 | 5 | Cilalama | — |
 
 Çalışma şekli: **faz faz.** Bir faz bitince kontroller + özet verilir, kullanıcı onaylamadan sonraki faza geçilmez.
@@ -30,7 +30,8 @@ Bir faz bittiğinde bu tabloyu güncelle.
 
 - **Oy kuralı:** Ziyaretçiyken oy verip sonra giriş yapan kişi aynı ankete tekrar oy veremez.
   Üye oy verirken hem `user` hem `voter_token` (çerez) kontrol edilir; oy kaydında ikisi de saklanır.
-  Bu, plandaki bölüm 4.4 kısıtlarına ek bir view kontrolüdür (Faz 3).
+  Uygulandı (Faz 3): `polls/services.py::_voter_filter` = `user` VEYA `voter_token`.
+  Sonuç: aynı tarayıcıda başka bir üye de o ankete oy veremez; sonuçları görür ama "Senin oyun" rozeti çıkmaz.
 - **Benzersizlik DB seviyesinde:** `username` ve `email` için `UniqueConstraint(Lower(...))` (büyük/küçük harf duyarsız). Formlar yine `iexact` ile kontrol edip Türkçe hata gösterir.
 - **Kullanıcı adı sadece ASCII:** `^[A-Za-z0-9_.]+$`, 3–30 karakter. Türkçe İ/ı büyük/küçük harf dönüşüm sorunlarını önlemek için ş/ğ/ı yok.
 - **Sayfalama:** sayfa numaralı basit sayfalama; "Daha fazla" butonu yok.
@@ -38,8 +39,7 @@ Bir faz bittiğinde bu tabloyu güncelle.
 
 ## Geçici şeyler (unutma)
 
-- Akış kartlarında ve detay sayfasında seçenekler `<button disabled>` olarak çiziliyor (oy verme yok) → **Faz 3'te** oy formuna çevir (`partials/poll_card.html`, `polls/poll_detail.html`).
-- Kartlarda toplam oy sayısı yok → Faz 3'te `annotate(total_votes=Count("votes"))` ile ekle.
+- Şu an yok.
 
 ## Yapı
 
@@ -59,6 +59,9 @@ docs/          KARARSIZIM_PLAN.md
 - Anket formu: seçenekler tekrar eden `options` input'ları olarak gelir (`request.POST.getlist("options")`), `PollCreateForm` boşları atar, 2–5 / ≤100 karakter / tekrar yok kuralını uygular. Tekrar kontrolü Türkçe İ/ı'ya duyarlı (`polls/forms.py::comparison_key`). Kayıt `transaction.atomic` içinde.
 - Seçenek rengi: `Option.color_class` (`opt-1`…`opt-5`). Göreli zaman: `{% load poll_extras %}` + `|relative_time` ("az önce", "5 dakika önce").
 - Akış: `?sayfa=N`, sayfa başına 10, `select_related("author").prefetch_related("options")` — sorgu sayısı anket sayısıyla artmamalı (testi var).
+- Oylama: `polls/middleware.py` her tarayıcıya `kararsizim_vid` (UUID4) çerezi verir → `request.voter_token`. `POST /anket/<id>/oy/` `Accept: application/json` ise plan §5.2 JSON'u döner, değilse detay sayfasına redirect + mesaj. Sayım/yüzde/"oy verdi mi" mantığı `polls/services.py` içinde (`polls_with_counts`, `build_results`, `votes_by_poll`).
+- **Dikkat:** `annotate(Count(...))` olan sorgularda `Meta.ordering` uygulanmaz → `order_by` açıkça yazılmalı (`polls_with_counts`).
+- Kart/detay ortak gövdesi: `partials/poll_body.html` (oy formu ya da `partials/poll_results.html`). `vote.js` aynı sonuç HTML'ini JS ile üretir; birini değiştirirsen diğerini de değiştir.
 - Formlar `templates/partials/field.html` (etiket, input, yardım, hata) ve `partials/form_errors.html` ile çizilir; yeni formlarda da bunları kullan.
 - `?next=` sadece `url_has_allowed_host_and_scheme` ile doğrulanarak kullanılır (`accounts/views.py::_safe_next`).
 - Çıkış sadece POST (navbar'da küçük form).

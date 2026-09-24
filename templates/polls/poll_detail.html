@@ -13,11 +13,7 @@
     <time datetime="{{ poll.created_at|date:'c' }}" title="{{ poll.created_at|date:'j F Y H:i' }}">{{ poll.created_at|relative_time }}</time>
   </div>
   <h1 class="poll-card__question poll-detail__question">{{ poll.question }}</h1>
-  <div class="options">
-    {% for option in poll.options.all %}
-      <button type="button" class="option {{ option.color_class }}" disabled>{{ option.text }}</button>
-    {% endfor %}
-  </div>
+  {% include "partials/poll_body.html" %}
   <div class="poll-detail__actions">
     <button type="button" class="btn btn-ghost btn-sm" data-copy-link hidden>🔗 Linki kopyala</button>
     <span class="poll-detail__date">{{ poll.created_at|date:"j F Y, H:i" }}</span>

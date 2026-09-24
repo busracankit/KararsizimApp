@@ -48,3 +48,45 @@ class Option(models.Model):
     def color_class(self):
         """CSS class for this option's colour: order 0 -> "opt-1" ... order 4 -> "opt-5"."""
         return f"opt-{self.order + 1}"
+
+
+class Vote(models.Model):
+    """One vote per poll per account and per browser (voter_token cookie).
+
+    Members' votes store both ``user`` and ``voter_token`` so that a visitor who
+    votes and then logs in on the same browser cannot vote a second time.
+    """
+
+    poll = models.ForeignKey(Poll, on_delete=models.CASCADE, related_name="votes", verbose_name="anket")
+    option = models.ForeignKey(Option, on_delete=models.CASCADE, related_name="votes", verbose_name="seçenek")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="votes",
+        verbose_name="üye",
+    )
+    voter_token = models.CharField("ziyaretçi anahtarı", max_length=36, null=True, blank=True)
+    created_at = models.DateTimeField("oy zamanı", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "oy"
+        verbose_name_plural = "oylar"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["poll", "user"], condition=models.Q(user__isnull=False), name="unique_vote_per_user"
+            ),
+            models.UniqueConstraint(
+                fields=["poll", "voter_token"],
+                condition=models.Q(voter_token__isnull=False),
+                name="unique_vote_per_token",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(user__isnull=False) | models.Q(voter_token__isnull=False),
+                name="vote_has_user_or_token",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.poll_id} → {self.option}"

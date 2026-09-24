@@ -1,0 +1,12 @@
+{# Results list. Expects `results` (from polls.services.build_results). #}
+<ul class="results" aria-label="Sonuçlar">
+  {% for r in results.results %}
+    <li class="result {{ r.color_class }}{% if r.is_winner %} is-winner{% endif %}{% if r.is_mine %} is-mine{% endif %}">
+      <div class="result__row">
+        <span class="result__label">{{ r.text }}{% if r.is_mine %} <span class="result__mine">Senin oyun ✓</span>{% endif %}</span>
+        <span class="result__meta">%{{ r.percent }} · {{ r.votes }} oy</span>
+      </div>
+      <div class="result__track" aria-hidden="true"><div class="result__fill" style="width: {{ r.percent }}%"></div></div>
+    </li>
+  {% endfor %}
+</ul>

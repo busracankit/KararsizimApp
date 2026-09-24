@@ -1,0 +1,15 @@
+{# Options (vote form) or results for one poll, plus total votes. Used by the feed card and the detail page. #}
+<div class="poll-body" data-poll-body>
+  {% if poll.has_voted %}
+    {% include "partials/poll_results.html" with results=poll.results %}
+  {% else %}
+    <form method="post" action="{% url 'poll_vote' poll.pk %}" class="options" data-vote-form>
+      {% csrf_token %}
+      {% for option in poll.options.all %}
+        <button type="submit" name="option_id" value="{{ option.pk }}" class="option {{ option.color_class }}">{{ option.text }}</button>
+      {% endfor %}
+    </form>
+  {% endif %}
+  <p class="poll-card__notice" data-vote-notice role="status" aria-live="polite" hidden></p>
+  <div class="poll-card__footer"><span data-total-votes>{{ poll.total_votes }}</span> oy{% if not poll.has_voted %}<span class="poll-card__hint"> · Oy ver, sonuçları gör</span>{% endif %}</div>
+</div>
