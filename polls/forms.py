@@ -1,9 +1,21 @@
+from datetime import timedelta
+
 from django import forms
 from django.db import transaction
+from django.utils import timezone
 
 from .models import MAX_OPTIONS, MIN_OPTIONS, Option, Poll
 
 OPTION_MAX_LENGTH = Option._meta.get_field("text").max_length
+
+# value -> (label, duration or None for "no end")
+DURATIONS = {
+    "": ("Süresiz", None),
+    "1s": ("1 saat", timedelta(hours=1)),
+    "1g": ("1 gün", timedelta(days=1)),
+    "3g": ("3 gün", timedelta(days=3)),
+    "1h": ("1 hafta", timedelta(weeks=1)),
+}
 
 
 def comparison_key(text):
@@ -31,6 +43,13 @@ class PollCreateForm(forms.Form):
             "min_length": "Soru en az 5 karakter olmalı.",
             "max_length": "Soru en fazla 200 karakter olabilir.",
         },
+    )
+
+    duration = forms.ChoiceField(
+        label="Oylama ne kadar açık kalsın?",
+        choices=[(value, label) for value, (label, _) in DURATIONS.items()],
+        required=False,
+        initial="",
     )
 
     def __init__(self, data=None, *args, **kwargs):
@@ -71,7 +90,12 @@ class PollCreateForm(forms.Form):
 
     @transaction.atomic
     def save(self, author):
-        poll = Poll.objects.create(author=author, question=self.cleaned_data["question"])
+        length = DURATIONS[self.cleaned_data.get("duration") or ""][1]
+        poll = Poll.objects.create(
+            author=author,
+            question=self.cleaned_data["question"],
+            closes_at=timezone.now() + length if length else None,
+        )
         Option.objects.bulk_create(
             Option(poll=poll, text=text, order=order) for order, text in enumerate(self.cleaned_data["options"])
         )

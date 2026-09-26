@@ -193,7 +193,8 @@ class ResultsViewTests(VoteTestCase):
         self.assertNotContains(before, "Senin oyun")
         self.vote(client, self.restoran)
         after = client.get(reverse("poll_list"))
-        self.assertNotContains(after, 'name="option_id"')
+        self.assertNotContains(after, "Oy ver, sonuçları gör")  # results view, not the vote form
+        self.assertContains(after, "Oyumu değiştir")
         self.assertContains(after, "Senin oyun ✓")
         self.assertContains(after, "%100 · 1 oy")
         self.assertContains(after, "is-winner")
@@ -203,7 +204,7 @@ class ResultsViewTests(VoteTestCase):
         self.vote(client, self.park)
         response = client.get(self.poll.get_absolute_url())
         self.assertContains(response, "Senin oyun ✓")
-        self.assertNotContains(response, 'name="option_id"')
+        self.assertNotContains(response, "Oy ver, sonuçları gör")
 
     def test_total_votes_visible_before_voting(self):
         self.vote(self.browser(), self.sinema)

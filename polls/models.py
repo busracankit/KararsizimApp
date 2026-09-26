@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.core.validators import MinLengthValidator
 from django.db import models
+from django.utils import timezone
 
 MIN_OPTIONS = 2
 MAX_OPTIONS = 5
@@ -12,6 +13,7 @@ class Poll(models.Model):
     )
     question = models.CharField("soru", max_length=200, validators=[MinLengthValidator(5)])
     created_at = models.DateTimeField("oluşturulma", auto_now_add=True, db_index=True)
+    closes_at = models.DateTimeField("oylama bitişi", null=True, blank=True, help_text="Boşsa anket süresiz açık kalır.")
 
     class Meta:
         ordering = ["-created_at", "-id"]
@@ -25,6 +27,10 @@ class Poll(models.Model):
         from django.urls import reverse
 
         return reverse("poll_detail", args=[self.pk])
+
+    @property
+    def is_closed(self):
+        return self.closes_at is not None and timezone.now() >= self.closes_at
 
 
 class Option(models.Model):

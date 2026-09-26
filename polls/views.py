@@ -22,12 +22,21 @@ DEFAULT_SORT = "yeni"
 
 
 def _attach_vote_state(request, polls):
-    """Set poll.has_voted and poll.results (when voted) for rendering cards."""
+    """Set per-poll display state for cards / detail:
+
+    has_voted     this browser/account already voted
+    show_results  voted, or voting has closed
+    can_change    the vote is this viewer's own and the poll is still open
+    results       build_results(...) when show_results
+    """
     voted = votes_by_poll(request, [p.pk for p in polls])
     for poll in polls:
         poll.has_voted = poll.pk in voted
-        if poll.has_voted:
-            poll.results = build_results(poll, voted[poll.pk])
+        my_option = voted.get(poll.pk)
+        poll.show_results = poll.has_voted or poll.is_closed
+        poll.can_change = poll.has_voted and my_option is not None and not poll.is_closed
+        if poll.show_results:
+            poll.results = build_results(poll, my_option)
 
 
 def _paginate(request, queryset):
@@ -94,9 +103,26 @@ def _wants_json(request):
 
 @require_POST
 def poll_vote(request, pk):
-    """Record one vote. JSON for fetch() calls (API contract: plan §5.2), redirect otherwise."""
+    """Record or change a vote. JSON for fetch() calls (API contract: plan §5.2 + extensions), redirect otherwise.
+
+    Extensions to the original contract:
+    - ``change=1`` switches the viewer's own vote while the poll is open (200).
+    - 403 ``poll_closed`` once ``closes_at`` has passed (results are still returned).
+    - Every results payload also carries ``can_change`` and ``closed``.
+    """
     poll = get_object_or_404(Poll, pk=pk)
     as_json = _wants_json(request)
+    wants_change = request.POST.get("change") == "1"
+
+    def respond(status, ok, message, level, voted_option_id, can_change, error=None):
+        if as_json:
+            body = {"ok": ok, **_public(build_results(poll, voted_option_id))}
+            body.update(can_change=can_change, closed=poll.is_closed)
+            if error:
+                body["error"] = error
+            return JsonResponse(body, status=status)
+        getattr(messages, level)(request, message)
+        return redirect(poll)
 
     try:
         option = poll.options.get(pk=int(request.POST.get("option_id", "")))
@@ -107,31 +133,33 @@ def poll_vote(request, pk):
         return redirect(poll)
 
     previous = existing_vote(request, poll)
-    if previous is None:
-        try:
-            with transaction.atomic():
-                Vote.objects.create(
-                    poll=poll,
-                    option=option,
-                    user=request.user if request.user.is_authenticated else None,
-                    voter_token=request.voter_token,
-                )
-        except IntegrityError:  # a parallel request won the race
-            previous = existing_vote(request, poll)
+    mine = previous is not None and (previous.user_id is None or previous.user_id == getattr(request.user, "pk", None))
+    my_option = previous.option_id if mine else None
+
+    if poll.is_closed:
+        return respond(403, False, "Bu anketin oylaması kapandı.", "info", my_option, False, "poll_closed")
 
     if previous is not None:
-        mine = previous.user_id is None or previous.user_id == getattr(request.user, "pk", None)
-        payload = build_results(poll, previous.option_id if mine else None)
-        if as_json:
-            return JsonResponse({"ok": False, "error": "already_voted", **_public(payload)}, status=409)
-        messages.info(request, "Bu ankete zaten oy vermişsin.")
-        return redirect(poll)
+        if wants_change and mine:
+            if previous.option_id != option.pk:
+                previous.option = option
+                previous.save(update_fields=["option"])
+            return respond(200, True, "Oyun güncellendi ✓", "success", option.pk, True)
+        return respond(409, False, "Bu ankete zaten oy vermişsin.", "info", my_option, mine, "already_voted")
 
-    payload = build_results(poll, option.pk)
-    if as_json:
-        return JsonResponse({"ok": True, **_public(payload)})
-    messages.success(request, "Oyun kaydedildi ✓")
-    return redirect(poll)
+    try:
+        with transaction.atomic():
+            Vote.objects.create(
+                poll=poll,
+                option=option,
+                user=request.user if request.user.is_authenticated else None,
+                voter_token=request.voter_token,
+            )
+    except IntegrityError:  # a parallel request won the race
+        previous = existing_vote(request, poll)
+        return respond(409, False, "Bu ankete zaten oy vermişsin.", "info",
+                       previous.option_id if previous else None, False, "already_voted")
+    return respond(200, True, "Oyun kaydedildi ✓", "success", option.pk, True)
 
 
 def _public(payload):

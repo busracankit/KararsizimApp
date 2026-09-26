@@ -24,3 +24,15 @@ def get_item(mapping, key):
         return mapping.get(key)
     except AttributeError:
         return None
+
+
+@register.filter
+def time_left(value):
+    """"2 saat kaldı" / "az kaldı" for an upcoming datetime."""
+    if not value:
+        return ""
+    if value - timezone.now() < timedelta(minutes=1):
+        return "az kaldı"
+    from django.utils.timesince import timeuntil
+
+    return f"{timeuntil(value, depth=1)} kaldı"

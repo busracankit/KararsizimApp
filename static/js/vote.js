@@ -5,6 +5,8 @@
 
   const MESSAGES = {
     already_voted: "Bu ankete zaten oy vermişsin.",
+    poll_closed: "Bu anketin oylaması kapandı.",
+    rate_limited: "Çok hızlı gidiyorsun, biraz bekleyip tekrar dene.",
     invalid_option: "Bu seçenek geçersiz. Sayfayı yenileyip tekrar dene.",
     network: "Bağlantı sorunu oldu, oyun kaydedilmedi. Tekrar dene.",
   };
@@ -64,8 +66,51 @@
     return list;
   }
 
+  function resetForm(form) {
+    delete form.dataset.busy;
+    form.querySelectorAll("button").forEach(function (b) {
+      b.disabled = false;
+      b.classList.remove("is-picked");
+    });
+  }
+
+  // "Oyumu değiştir" block: a copy of the vote buttons that posts change=1.
+  function buildChangeBlock(voteForm) {
+    const details = el("details", "change-vote");
+    details.setAttribute("data-change-vote", "");
+    details.appendChild(el("summary", "", "Oyumu değiştir"));
+    const copy = voteForm.cloneNode(true);
+    const flag = document.createElement("input");
+    flag.type = "hidden";
+    flag.name = "change";
+    flag.value = "1";
+    copy.insertBefore(flag, copy.firstChild);
+    resetForm(copy);
+    details.appendChild(copy);
+    return details;
+  }
+
   function showResults(body, form, data) {
-    form.replaceWith(renderResults(data));
+    const results = renderResults(data);
+    const current = body.querySelector(".results");
+    const mainForm = body.querySelector(":scope > [data-vote-form]");
+    let details = body.querySelector("[data-change-vote]");
+
+    if (current) {
+      current.replaceWith(results);
+    } else if (mainForm) {
+      if (data.can_change && !details) details = buildChangeBlock(mainForm);
+      mainForm.replaceWith(results);
+    }
+
+    if (data.can_change && details) {
+      if (!details.isConnected) results.after(details);
+      details.open = false;
+      resetForm(details.querySelector("[data-vote-form]"));
+    } else if (details) {
+      details.remove();
+    }
+
     const total = body.querySelector("[data-total-votes]");
     if (total) total.textContent = data.total_votes;
     const hint = body.querySelector(".poll-card__hint");
@@ -101,7 +146,11 @@
         "Content-Type": "application/x-www-form-urlencoded",
         "X-CSRFToken": csrfToken(form),
       },
-      body: new URLSearchParams({ option_id: button.value }),
+      body: (function () {
+        const params = new URLSearchParams({ option_id: button.value });
+        if (form.querySelector("input[name=change]")) params.set("change", "1");
+        return params;
+      })(),
       credentials: "same-origin",
     })
       .then(function (response) {
@@ -117,9 +166,7 @@
       })
       .catch(function (error) {
         notice(body, MESSAGES[error.message] || MESSAGES.network);
-        delete form.dataset.busy;
-        button.classList.remove("is-picked");
-        buttons.forEach(function (b) { b.disabled = false; });
+        resetForm(form);
       });
   });
 })();

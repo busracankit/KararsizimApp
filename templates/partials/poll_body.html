@@ -1,15 +1,24 @@
-{# Options (vote form) or results for one poll, plus total votes. Used by the feed card and the detail page. #}
+{% load poll_extras %}
+{# Options (vote form) or results for one poll, plus status and total votes. Used by feed cards and the detail page. #}
 <div class="poll-body" data-poll-body>
-  {% if poll.has_voted %}
+  {% if poll.show_results %}
     {% include "partials/poll_results.html" with results=poll.results %}
+    {% if poll.can_change %}
+      <details class="change-vote" data-change-vote>
+        <summary>Oyumu değiştir</summary>
+        {% include "partials/vote_form.html" with change=True %}
+      </details>
+    {% endif %}
   {% else %}
-    <form method="post" action="{% url 'poll_vote' poll.pk %}" class="options" data-vote-form>
-      {% csrf_token %}
-      {% for option in poll.options.all %}
-        <button type="submit" name="option_id" value="{{ option.pk }}" class="option {{ option.color_class }}">{{ option.text }}</button>
-      {% endfor %}
-    </form>
+    {% include "partials/vote_form.html" %}
   {% endif %}
   <p class="poll-card__notice" data-vote-notice role="status" aria-live="polite" hidden></p>
-  <div class="poll-card__footer"><span data-total-votes>{{ poll.total_votes }}</span> oy{% if not poll.has_voted %}<span class="poll-card__hint"> · Oy ver, sonuçları gör</span>{% endif %}</div>
+  <div class="poll-card__footer">
+    <span><span data-total-votes>{{ poll.total_votes }}</span> oy{% if not poll.show_results %}<span class="poll-card__hint"> · Oy ver, sonuçları gör</span>{% endif %}</span>
+    {% if poll.is_closed %}
+      <span class="poll-status poll-status--closed">🔒 Oylama kapandı</span>
+    {% elif poll.closes_at %}
+      <span class="poll-status" title="{{ poll.closes_at|date:'j F Y H:i' }}">⏳ {{ poll.closes_at|time_left }}</span>
+    {% endif %}
+  </div>
 </div>

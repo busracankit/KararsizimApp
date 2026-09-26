@@ -1,0 +1,8 @@
+{# Vote buttons. With change=True the form switches an existing vote (option_id + change=1). #}
+<form method="post" action="{% url 'poll_vote' poll.pk %}" class="options" data-vote-form>
+  {% csrf_token %}
+  {% if change %}<input type="hidden" name="change" value="1">{% endif %}
+  {% for option in poll.options.all %}
+    <button type="submit" name="option_id" value="{{ option.pk }}" class="option {{ option.color_class }}">{{ option.text }}</button>
+  {% endfor %}
+</form>

@@ -496,3 +496,31 @@ a.poll-card__author:hover { color: var(--primary); text-decoration: underline; }
 .card.poll-card { transition: box-shadow .2s ease; }
 .card.poll-card:hover { box-shadow: 0 10px 30px rgba(124, 58, 237, 0.12); }
 .poll-detail__actions .btn-danger-ghost { order: 2; }
+
+/* ---------- Vote change & poll status ---------- */
+.poll-card__footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 12px; }
+.poll-status { font-size: 13px; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
+.poll-status--closed { color: var(--text); background: var(--border); padding: 3px 10px; border-radius: 999px; }
+.change-vote { margin-top: 12px; }
+.change-vote > summary {
+  display: inline-block;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+  list-style: none;
+  padding: 4px 0;
+}
+.change-vote > summary::-webkit-details-marker { display: none; }
+.change-vote > summary::before { content: "↺ "; }
+.change-vote[open] > summary { margin-bottom: 10px; }
+.field select {
+  width: 100%;
+  padding: 14px 16px;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.field select:focus { outline: 3px solid var(--primary-soft); border-color: var(--primary); }
