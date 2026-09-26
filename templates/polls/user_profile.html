@@ -12,6 +12,7 @@
     <h1 class="profile-header__name">@{{ profile_user.username }}</h1>
     <p class="profile-header__meta">
       Üyelik: {{ profile_user.date_joined|date:"F Y" }} · {{ page.paginator.count }} anket
+      {% if user == profile_user %} · <a href="{% url 'password_change' %}">Parolamı değiştir</a>{% endif %}
     </p>
   </div>
 </section>

@@ -138,6 +138,24 @@ warnings.filterwarnings("ignore", message="No directory at", category=UserWarnin
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# --- E-mail (password reset) ----------------------------------------------
+# RESEND_API_KEY set -> Resend HTTP API; else EMAIL_HOST set -> SMTP (e.g. Gmail); else printed to console.
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Kararsızım <onboarding@resend.dev>")
+if RESEND_API_KEY:
+    EMAIL_BACKEND = "accounts.email.ResendEmailBackend"
+elif os.environ.get("EMAIL_HOST"):
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = os.environ["EMAIL_HOST"]
+    EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+    EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+    EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+    EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
+    EMAIL_TIMEOUT = 10
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+PASSWORD_RESET_TIMEOUT = 2 * 60 * 60  # reset links are valid for 2 hours
+
 # Abuse protection: scope -> (max attempts, window in seconds, "ip" | "user").
 RATE_LIMITS = {
     "vote": (60, 10 * 60, "ip"),

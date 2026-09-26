@@ -15,6 +15,7 @@
     {% include "partials/form_errors.html" %}
     {% include "partials/field.html" with field=form.email %}
     {% include "partials/field.html" with field=form.password %}
+    <p class="form-link"><a href="{% url 'password_reset' %}">Parolamı unuttum</a></p>
     <button type="submit" class="btn btn-primary btn-lg btn-block">Giriş yap</button>
   </form>
 

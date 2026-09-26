@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout
+from django.contrib.auth import views as auth_views
+from django.urls import reverse_lazy
 from django.shortcuts import redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
@@ -58,3 +60,19 @@ def logout_view(request):
     logout(request)
     messages.info(request, "Çıkış yaptın. Görüşmek üzere 👋")
     return redirect(settings.LOGOUT_REDIRECT_URL)
+
+
+class RateLimitedPasswordResetView(auth_views.PasswordResetView):
+    """Same response whether or not the address exists (no account enumeration)."""
+
+    template_name = "accounts/password_reset_form.html"
+    email_template_name = "accounts/emails/password_reset.txt"
+    html_email_template_name = "accounts/emails/password_reset.html"
+    subject_template_name = "accounts/emails/password_reset_subject.txt"
+    success_url = reverse_lazy("password_reset_done")
+
+    def form_valid(self, form):
+        if hit_rate_limit(self.request, "password_reset"):
+            messages.error(self.request, TOO_MANY)
+            return self.form_invalid(form)
+        return super().form_valid(form)
