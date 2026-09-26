@@ -126,3 +126,16 @@ class Vote(models.Model):
 
     def __str__(self):
         return f"{self.poll_id} → {self.option}"
+
+
+class RateLimitHit(models.Model):
+    """One attempt at a rate-limited action (see polls/ratelimit.py)."""
+
+    scope = models.CharField(max_length=30)
+    key = models.CharField(max_length=80)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "hız sınırı kaydı"
+        verbose_name_plural = "hız sınırı kayıtları"
+        indexes = [models.Index(fields=["scope", "key", "created_at"], name="ratelimit_lookup")]

@@ -138,6 +138,18 @@ warnings.filterwarnings("ignore", message="No directory at", category=UserWarnin
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Abuse protection: scope -> (max attempts, window in seconds, "ip" | "user").
+RATE_LIMITS = {
+    "vote": (60, 10 * 60, "ip"),
+    "poll_create": (5, 60 * 60, "user"),
+    "comment": (10, 10 * 60, "user"),
+    "report": (10, 60 * 60, "ip"),
+    "login": (10, 15 * 60, "ip"),
+    "register": (5, 60 * 60, "ip"),
+    "password_reset": (5, 60 * 60, "ip"),
+    "upload": (20, 60 * 60, "user"),
+}
+
 # --- Production (DEBUG=False, e.g. on Vercel) -------------------------------
 if not DEBUG:
     # Vercel terminates HTTPS and forwards the original scheme in this header.

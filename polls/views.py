@@ -10,6 +10,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from .forms import PollCreateForm
+from .ratelimit import hit_rate_limit
 from .models import CATEGORIES, MAX_OPTIONS, MIN_OPTIONS, Option, Poll, Vote
 from .services import build_results, existing_vote, polls_with_counts, votes_by_poll
 
@@ -132,6 +133,14 @@ def poll_detail(request, pk):
 @login_required
 def poll_create(request):
     form = PollCreateForm(request.POST if request.method == "POST" else None)
+    if request.method == "POST" and hit_rate_limit(request, "poll_create"):
+        messages.error(request, "Kısa sürede çok fazla anket açtın. Biraz sonra tekrar dene.")
+        return render(
+            request,
+            "polls/poll_create.html",
+            {"form": form, "min_options": MIN_OPTIONS, "max_options": MAX_OPTIONS},
+            status=429,
+        )
     if request.method == "POST" and form.is_valid():
         poll = form.save(author=request.user)
         messages.success(request, "Anketin yayında! Linki paylaş, herkes oylasın 🎉")
@@ -169,6 +178,11 @@ def poll_vote(request, pk):
     """
     poll = get_object_or_404(Poll, pk=pk)
     as_json = _wants_json(request)
+    if hit_rate_limit(request, "vote"):
+        if as_json:
+            return JsonResponse({"ok": False, "error": "rate_limited"}, status=429)
+        messages.error(request, "Çok hızlı gidiyorsun, biraz bekleyip tekrar dene.")
+        return redirect(poll)
     wants_change = request.POST.get("change") == "1"
 
     def respond(status, ok, message, level, voted_option_id, can_change, error=None):

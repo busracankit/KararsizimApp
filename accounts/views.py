@@ -5,7 +5,11 @@ from django.shortcuts import redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
+from polls.ratelimit import hit_rate_limit
+
 from .forms import LoginForm, RegisterForm
+
+TOO_MANY = "Çok fazla deneme yaptın. Biraz bekleyip tekrar dene."
 
 EMAIL_BACKEND = "accounts.backends.EmailBackend"
 
@@ -24,6 +28,9 @@ def register(request):
     if request.user.is_authenticated:
         return redirect("poll_list")
     form = RegisterForm(request.POST or None)
+    if request.method == "POST" and hit_rate_limit(request, "register"):
+        messages.error(request, TOO_MANY)
+        return render(request, "accounts/register.html", {"form": RegisterForm(), "next": _safe_next(request, "")}, status=429)
     if request.method == "POST" and form.is_valid():
         user = form.save()
         login(request, user, backend=EMAIL_BACKEND)
@@ -35,6 +42,9 @@ def register(request):
 def login_view(request):
     if request.user.is_authenticated:
         return redirect("poll_list")
+    if request.method == "POST" and hit_rate_limit(request, "login"):
+        messages.error(request, TOO_MANY)
+        return render(request, "accounts/login.html", {"form": LoginForm(request=request), "next": _safe_next(request, "")}, status=429)
     form = LoginForm(request.POST or None, request=request)
     if request.method == "POST" and form.is_valid():
         login(request, form.user, backend=EMAIL_BACKEND)
