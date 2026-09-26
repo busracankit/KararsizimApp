@@ -10,6 +10,29 @@
     }, 4000);
   });
 
+  // Light / dark toggle. Without a saved choice the OS setting is used.
+  const toggle = document.querySelector("[data-theme-toggle]");
+  if (toggle) {
+    const root = document.documentElement;
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const current = function () { return root.dataset.theme || (media.matches ? "dark" : "light"); };
+    const paint = function () {
+      const dark = current() === "dark";
+      toggle.textContent = dark ? "☀️" : "🌙";
+      toggle.setAttribute("aria-label", dark ? "Aydınlık moda geç" : "Karanlık moda geç");
+      toggle.setAttribute("aria-pressed", String(dark));
+    };
+    toggle.hidden = false;
+    paint();
+    toggle.addEventListener("click", function () {
+      const next = current() === "dark" ? "light" : "dark";
+      root.dataset.theme = next;
+      try { localStorage.setItem("theme", next); } catch (e) {}
+      paint();
+    });
+    media.addEventListener("change", paint);
+  }
+
   // "Copy link" buttons (only shown when the Clipboard API is available).
   document.querySelectorAll("[data-copy-link]").forEach(function (button) {
     if (!navigator.clipboard) return;

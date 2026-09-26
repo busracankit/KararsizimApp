@@ -28,6 +28,10 @@
   /* Status */
   --success: #16A34A;
   --danger: #DC2626;
+  --success-soft: #E7F7EC;  --success-border: #C6ECD2;
+  --danger-soft: #FDECEC;   --danger-border: #F7CFCF;  --danger-text: #991B1B;
+  --warning-border: #F6E3A1;
+  --navbar-bg: rgba(250, 248, 255, .85);
 
   /* Shape */
   --radius: 18px;
@@ -123,7 +127,7 @@ a { color: var(--primary); }
   position: sticky;
   top: 0;
   z-index: 10;
-  background: rgba(250, 248, 255, .85);
+  background: var(--navbar-bg);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
 }
@@ -225,9 +229,9 @@ a { color: var(--primary); }
   border: 1px solid var(--border);
   transition: opacity .4s ease, transform .4s ease;
 }
-.flash--success { background: #E7F7EC; border-color: #C6ECD2; }
-.flash--error   { background: #FDECEC; border-color: #F7CFCF; }
-.flash--warning { background: var(--opt-5-soft); border-color: #F6E3A1; }
+.flash--success { background: var(--success-soft); border-color: var(--success-border); }
+.flash--error   { background: var(--danger-soft); border-color: var(--danger-border); }
+.flash--warning { background: var(--opt-5-soft); border-color: var(--warning-border); }
 .flash.is-hiding { opacity: 0; transform: translateY(-6px); }
 
 /* ---------- Forms ---------- */
@@ -279,9 +283,9 @@ a { color: var(--primary); }
 .form-alert {
   padding: 12px 16px;
   border-radius: var(--radius-sm);
-  background: #FDECEC;
-  border: 1px solid #F7CFCF;
-  color: #991B1B;
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-border);
+  color: var(--danger-text);
   font-weight: 600;
 }
 .form-alert p { margin: 0; }
@@ -482,7 +486,7 @@ a.poll-card__author:hover { color: var(--primary); text-decoration: underline; }
 .btn-danger { background: var(--danger); color: #fff; }
 .btn-danger:hover { transform: translateY(-1px); background: #B91C1C; }
 .btn-danger-ghost { color: var(--danger); }
-.btn-danger-ghost:hover { background: #FDECEC; border-color: #F7CFCF; }
+.btn-danger-ghost:hover { background: var(--danger-soft); border-color: var(--danger-border); }
 .confirm-card__question { font-size: 18px; font-weight: 700; margin: 12px 0 4px; }
 .confirm-card__actions { display: flex; flex-wrap: wrap; gap: 10px; }
 
@@ -626,3 +630,71 @@ a.poll-card__author:hover { color: var(--primary); text-decoration: underline; }
 .option-input__image:focus-within { outline: 3px solid var(--primary); outline-offset: 2px; }
 .option-input__image input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .option-input__image img { width: 100%; height: 100%; object-fit: cover; }
+
+
+/* ---------- Dark mode ----------
+   Follows the OS setting unless the visitor picked a theme with the navbar toggle
+   (stored as data-theme on <html>). Option colours keep their hue; soft tints get darker. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121019;
+  --surface: #1B1826;
+  --border: #2D2940;
+  --text: #F2F0FA;
+  --text-muted: #A7A3BC;
+  --primary: #A78BFA;
+  --primary-soft: #2A2145;
+  --opt-1-soft: #2A2145;
+  --opt-2-soft: #3A1B2E;
+  --opt-3-soft: #3A2515;
+  --opt-4-soft: #12312D;
+  --opt-5-soft: #342C10;
+  --success-soft: #12301F;  --success-border: #1E4D31;
+  --danger: #F87171;
+  --danger-soft: #3A1618;   --danger-border: #5C2226;  --danger-text: #FCA5A5;
+  --warning-border: #5A4A14;
+  --navbar-bg: rgba(18, 16, 25, .85);
+  --shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #121019;
+    --surface: #1B1826;
+    --border: #2D2940;
+    --text: #F2F0FA;
+    --text-muted: #A7A3BC;
+    --primary: #A78BFA;
+    --primary-soft: #2A2145;
+    --opt-1-soft: #2A2145;
+    --opt-2-soft: #3A1B2E;
+    --opt-3-soft: #3A2515;
+    --opt-4-soft: #12312D;
+    --opt-5-soft: #342C10;
+    --success-soft: #12301F;  --success-border: #1E4D31;
+    --danger: #F87171;
+    --danger-soft: #3A1618;   --danger-border: #5C2226;  --danger-text: #FCA5A5;
+    --warning-border: #5A4A14;
+    --navbar-bg: rgba(18, 16, 25, .85);
+    --shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  }
+}
+/* The filled "active chip" and danger button need dark text-safe colours in dark mode. */
+:root[data-theme="dark"] .chip.is-active { background: #7C3AED; border-color: #7C3AED; }
+:root[data-theme="dark"] .btn-danger { background: #DC2626; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .chip.is-active { background: #7C3AED; border-color: #7C3AED; }
+  :root:not([data-theme="light"]) .btn-danger { background: #DC2626; }
+}
+
+.theme-toggle {
+  display: grid;
+  place-items: center;
+  width: 36px; height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  font-size: 16px;
+  cursor: pointer;
+}
+.theme-toggle:hover { border-color: var(--primary); }

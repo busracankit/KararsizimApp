@@ -6,6 +6,11 @@
   <title>{% block title %}Kararsızım — Sor, herkes oylasın{% endblock %}</title>
   <meta name="description" content="{% block description %}Kararsız mı kaldın? Anket aç, herkes oylasın.{% endblock %}">
   <meta name="theme-color" content="#7C3AED">
+  <meta name="color-scheme" content="light dark">
+  <script>
+    /* Apply a saved theme before first paint to avoid a flash. */
+    try { var t = localStorage.getItem("theme"); if (t === "dark" || t === "light") document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
   {% if request %}<link rel="canonical" href="{{ request.build_absolute_uri }}">{% endif %}
 
   {# Open Graph / link previews (WhatsApp, X, Slack…) #}
