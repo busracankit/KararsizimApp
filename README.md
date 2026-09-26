@@ -37,6 +37,11 @@ python manage.py test
 | `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1` | `.vercel.app` | Hayır |
 | `DJANGO_CSRF_TRUSTED_ORIGINS` | — | `https://*.vercel.app` | Hayır |
 | `DATABASE_URL` | boş (SQLite) | Supabase Transaction pooler dizesi | **Evet** |
+| `SUPABASE_URL` | isteğe bağlı | `https://mzggagkmnkajelekvnxr.supabase.co` | Hayır |
+| `SUPABASE_SERVICE_ROLE_KEY` | isteğe bağlı | Supabase → Project Settings → API Keys → secret / service_role | **Evet** |
+| `RESEND_API_KEY` | isteğe bağlı (yoksa e-postalar konsola yazılır) | Resend → API Keys | **Evet** |
+| `DEFAULT_FROM_EMAIL` | — | `Kararsızım <onboarding@resend.dev>` (alan adı doğrulanınca kendi adresin) | Hayır |
+| `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | — | Resend yerine SMTP (ör. Gmail uygulama şifresi) kullanmak istersen | Parola **evet** |
 
 Gizli anahtar üretmek için:
 
@@ -76,6 +81,23 @@ Proje: **kararsizim** (bölge: eu-central-1 / Frankfurt).
    end $$;
    ```
 
+### Seçenek görselleri (Supabase Storage)
+
+`option-images` adlı herkese açık bucket kurulu (sadece `image/webp`, en fazla 2 MB). Dosyaları sadece sunucu
+service/secret anahtarıyla yükler ve siler; bucket'ta hiç policy yok, anon anahtar yükleyemez ve listeleyemez.
+
+## Yeni migration geldiğinde
+
+Canlıya push'tan **önce**:
+
+```bash
+source .venv/bin/activate
+pip install -r requirements.txt
+read -s DATABASE_URL && export DATABASE_URL   # Transaction pooler adresini yapıştır
+python manage.py migrate
+unset DATABASE_URL
+```
+
 ## Vercel (yayın)
 
 - Vercel Django'yu `manage.py` üzerinden otomatik tanır; `WSGI_APPLICATION` giriş noktasıdır.
@@ -95,3 +117,6 @@ Proje: **kararsizim** (bölge: eu-central-1 / Frankfurt).
 - [ ] Üye olarak oy ver → ikinci oy engelleniyor
 - [ ] `/admin/` → superuser ile giriş, anket ve oyları gör
 - [ ] Supabase REST API'den anon key ile tablolar okunamıyor (RLS)
+- [ ] Oy değiştir, süreli anket (kapanınca sonuçlar), kategori filtresi, arama
+- [ ] Yorum yaz / sil, anketi şikayet et, admin'de gizle/göster
+- [ ] Parolamı unuttum e-postası, seçeneğe görsel ekleme, karanlık mod, paylaşım önizlemesi

@@ -21,7 +21,8 @@ Bu dosyadaki "Netleşen kararlar" plan ile çelişirse **bu dosya geçerlidir** 
 | 2 | Anket oluşturma + akış | ✅ Tamamlandı |
 | 3 | Oy verme + sonuçlar | ✅ Tamamlandı |
 | 4 | Supabase + Vercel deploy | ✅ Tamamlandı |
-| 5 | Cilalama | ✅ Tamamlandı (onay bekliyor) — prototip bitti; sonrası için plan §12 Backlog |
+| 5 | Cilalama | ✅ Tamamlandı |
+| B | Backlog (plan §12, 11 madde) | ✅ Kodlandı (26.09) — kullanıcı testi bekliyor |
 
 Çalışma şekli: **faz faz.** Bir faz bitince kontroller + özet verilir, kullanıcı onaylamadan sonraki faza geçilmez.
 Bir faz bittiğinde bu tabloyu güncelle.
@@ -36,6 +37,22 @@ Bir faz bittiğinde bu tabloyu güncelle.
 - **Kullanıcı adı sadece ASCII:** `^[A-Za-z0-9_.]+$`, 3–30 karakter. Türkçe İ/ı büyük/küçük harf dönüşüm sorunlarını önlemek için ş/ğ/ı yok.
 - **Sayfalama:** sayfa numaralı basit sayfalama; "Daha fazla" butonu yok.
 - **Deploy:** Kod GitHub'da tutulacak, Vercel git entegrasyonu ile deploy. Supabase projesi, migration, RLS ve Vercel kurulumunu Claude connector'larla yapar (Faz 4). `vercel.json` Vercel'in güncel Django dokümanına göre yazılır (plandaki `builds` biçimi eski).
+
+## Backlog kararları (26.09)
+
+- **Oy değiştirme:** açık ankette `change=1`; sadece kendi oyun (paylaşılan tarayıcıda başkasının oyu değişmez).
+- **Süreli anket:** `Poll.closes_at` (süresiz/1s/1g/3g/1h). Kapanınca oy/değişiklik 403 `poll_closed`, sonuçlar herkese açık.
+- **Kategoriler:** `polls/models.py::CATEGORIES` (10 sabit). **Arama:** `?q=` soru + seçenek, Türkçe İ varyantı (`search_variants`).
+- **Hız sınırı:** `RateLimitHit` modeli + `polls/ratelimit.py`, sınırlar `settings.RATE_LIMITS`. IP: `X-Real-IP` / `X-Forwarded-For`.
+- **Şikayet/moderasyon:** `Report`; 5 açık şikayette `Poll.is_hidden`. Moderasyon Django admin'de (aksiyonlar). Gizli anket: 404 (sahibi + staff hariç).
+- **Yorumlar:** `Comment`, sadece üye, ≤500; yazan veya anket sahibi siler; admin gizler.
+- **Parola sıfırlama:** Django auth view'ları + Türkçe şablonlar. E-posta: `RESEND_API_KEY` → `accounts/email.py` (urllib), yoksa `EMAIL_HOST` SMTP, yoksa konsol. Gönderim hatası loglanır, raise edilmez.
+  Resend alan adı doğrulanmadan sadece hesap sahibinin adresine gönderir.
+- **Seçenek görseli:** `polls/storage.py` (Pillow → 800px WebP → Supabase Storage `option-images` public bucket, urllib). `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` yoksa alan gizli. Anket silinince görseller silinir.
+- **Karanlık mod:** CSS değişkenleri, `:root[data-theme]` + `prefers-color-scheme`; toggle `main.js`, `localStorage["theme"]`. Yeni renk eklerken token kullan (sabit hex yazma).
+- **Paylaşım görseli:** `polls/share_image.py` (Pillow, `polls/assets/fonts/PlusJakartaSans.ttf`, OFL). `/anket/<id>/paylasim.png`, og:image.
+- Sayımlar (`total_votes`, `comment_count`) korelasyonlu alt sorgu — JOIN+Count kullanma (arama/yorum join'leri sayıları bozar).
+- Oy API sözleşmesi uzantıları: `can_change`, `closed`, 403 `poll_closed`, 429 `rate_limited`, sonuçlarda isteğe bağlı `image_url`.
 
 ## Geçici şeyler (unutma)
 
@@ -109,3 +126,5 @@ python manage.py test
 - Kullanıcı macOS'ta; Claude'un yerel ortamı Linux ve Python 3.10. Vercel 3.12 kullanacak, kod 3.10+ uyumlu yazılır.
 - Git işlemleri Kararsizim klasöründe silme izni ister (`.git/index.lock`); izin her oturumda yeniden istenir.
 - `.env`, `db.sqlite3`, `.idea/`, `.DS_Store`, `Claude outputs/` git'e girmez.
+- Yeni migration varsa canlıya push'tan ÖNCE kullanıcı Mac'te `pip install -r requirements.txt` + `read -s DATABASE_URL` + `python manage.py migrate` çalıştırmalı (yoksa canlı site yeni kolonları bulamaz).
+- DEBUG=False yerel sunucuda şablonlar ve WhiteNoise dosyaları önbelleğe alınır; değişiklikten sonra sunucuyu yeniden başlat.
