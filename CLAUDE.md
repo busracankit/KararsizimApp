@@ -22,7 +22,7 @@ Bu dosyadaki "Netleşen kararlar" plan ile çelişirse **bu dosya geçerlidir** 
 | 3 | Oy verme + sonuçlar | ✅ Tamamlandı |
 | 4 | Supabase + Vercel deploy | ✅ Tamamlandı |
 | 5 | Cilalama | ✅ Tamamlandı |
-| B | Backlog (plan §12, 11 madde) | ✅ Kodlandı (26.09) — kullanıcı testi bekliyor |
+| B | Backlog (plan §12, 11 madde) | ✅ Yayında (26.09, f8b6a86) — kullanıcı testi bekliyor |
 
 Çalışma şekli: **faz faz.** Bir faz bitince kontroller + özet verilir, kullanıcı onaylamadan sonraki faza geçilmez.
 Bir faz bittiğinde bu tabloyu güncelle.
