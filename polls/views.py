@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
 from django.db.models import Exists, OuterRef, Q
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import urlencode
 from django.views.decorators.http import require_POST
@@ -153,6 +153,17 @@ def poll_detail(request, pk):
         "can_report": request.user != poll.author,
     }
     return render(request, "polls/poll_detail.html", context)
+
+
+def poll_share_image(request, pk):
+    """PNG preview card used as og:image when a poll link is shared."""
+    from .share_image import render_poll_card
+
+    poll = get_object_or_404(polls_with_counts(), pk=pk, is_hidden=False)
+    png = render_poll_card(poll, list(poll.options.all()), poll.total_votes)
+    response = HttpResponse(png, content_type="image/png")
+    response["Cache-Control"] = "public, max-age=600, s-maxage=600"
+    return response
 
 
 @login_required

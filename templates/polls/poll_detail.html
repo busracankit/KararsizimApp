@@ -6,6 +6,14 @@
 {% block og_title %}{{ poll.question }}{% endblock %}
 {% block og_description %}@{{ poll.author.username }} kararsız kaldı · {{ poll.total_votes }} oy · {% for option in poll.options.all %}{{ option.text }}{% if not forloop.last %} / {% endif %}{% endfor %} — sen olsan hangisini seçerdin?{% endblock %}
 
+{% block og_image %}{% if request and not poll.is_hidden %}
+  <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% url 'poll_share_image' poll.pk %}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="{{ poll.question }}">
+{% endif %}{% endblock %}
+{% block twitter_card %}summary_large_image{% endblock %}
+
 {% block content %}
 <a href="{% url 'poll_list' %}" class="back-link">‹ Tüm anketler</a>
 

@@ -20,7 +20,8 @@
   <meta property="og:title" content="{% block og_title %}Kararsızım — Sor, herkes oylasın{% endblock %}">
   <meta property="og:description" content="{% block og_description %}Kararsız mı kaldın? Anket aç, herkes oylasın.{% endblock %}">
   {% if request %}<meta property="og:url" content="{{ request.build_absolute_uri }}">{% endif %}
-  <meta name="twitter:card" content="summary">
+  {% block og_image %}{% endblock %}
+  <meta name="twitter:card" content="{% block twitter_card %}summary{% endblock %}">
 
   <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
