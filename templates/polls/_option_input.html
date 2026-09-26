@@ -5,6 +5,14 @@
   <span class="option-input__dot" aria-hidden="true"></span>
   <input type="text" name="options" id="option-{{ index }}" value="{{ value }}" maxlength="100"
          placeholder="Seçenek {{ number }}" autocomplete="off"{% if error %} aria-invalid="true"{% endif %}>
+  {% if images_enabled %}
+    <label class="option-input__image" title="Görsel ekle (isteğe bağlı)">
+      <span class="visually-hidden" data-image-label>Seçenek {{ number }} için görsel</span>
+      <input type="file" name="option_image_{{ index }}" accept="image/jpeg,image/png,image/webp,image/gif" data-option-image>
+      <img alt="" hidden data-image-preview>
+      <span aria-hidden="true" data-image-icon>🖼️</span>
+    </label>
+  {% endif %}
   <button type="button" class="option-input__remove" data-remove-option hidden aria-label="Seçenek {{ number }}'i sil">✕</button>
   {% if error %}<p class="field-error option-input__error">{{ error }}</p>{% endif %}
 </li>

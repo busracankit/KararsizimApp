@@ -605,3 +605,24 @@ a.poll-card__author:hover { color: var(--primary); text-decoration: underline; }
 .form-link { margin: -6px 0 0; text-align: right; font-size: 14px; }
 .form-link a { font-weight: 600; text-decoration: none; }
 .form-link a:hover { text-decoration: underline; }
+
+/* ---------- Option images ---------- */
+.option--image { display: flex; align-items: center; gap: 12px; padding: 8px 12px 8px 8px; }
+.option__img { flex: none; width: 56px; height: 56px; object-fit: cover; border-radius: 10px; background: var(--surface); }
+.result__img { width: 28px; height: 28px; object-fit: cover; border-radius: 6px; vertical-align: middle; margin-right: 8px; }
+.option-input__image {
+  flex: none;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px; height: 40px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  cursor: pointer;
+  overflow: hidden;
+}
+.option-input__image:hover { border-color: var(--primary); }
+.option-input__image:focus-within { outline: 3px solid var(--primary); outline-offset: 2px; }
+.option-input__image input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.option-input__image img { width: 100%; height: 100%; object-fit: cover; }

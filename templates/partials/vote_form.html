@@ -3,6 +3,9 @@
   {% csrf_token %}
   {% if change %}<input type="hidden" name="change" value="1">{% endif %}
   {% for option in poll.options.all %}
-    <button type="submit" name="option_id" value="{{ option.pk }}" class="option {{ option.color_class }}">{{ option.text }}</button>
+    <button type="submit" name="option_id" value="{{ option.pk }}" class="option {{ option.color_class }}{% if option.image_url %} option--image{% endif %}">
+      {% if option.image_url %}<img class="option__img" src="{{ option.image_url }}" alt="" loading="lazy" width="56" height="56">{% endif %}
+      <span>{{ option.text }}</span>
+    </button>
   {% endfor %}
 </form>

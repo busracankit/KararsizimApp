@@ -22,6 +22,11 @@
       const input = row.querySelector("input");
       const label = row.querySelector("[data-option-label]");
       const remove = row.querySelector("[data-remove-option]");
+      const file = row.querySelector("[data-option-image]");
+      if (file) {
+        file.name = "option_image_" + i;
+        row.querySelector("[data-image-label]").textContent = "Seçenek " + n + " için görsel";
+      }
       input.id = "option-" + i;
       input.placeholder = "Seçenek " + n;
       label.htmlFor = input.id;
@@ -62,6 +67,24 @@
     if (isLast && all.length < max && event.target.value.trim()) {
       event.preventDefault();
       addButton.click();
+    }
+  });
+
+  // Show a small preview when an image is picked.
+  list.addEventListener("change", function (event) {
+    const file = event.target.closest("[data-option-image]");
+    if (!file) return;
+    const wrapper = file.closest(".option-input__image");
+    const preview = wrapper.querySelector("[data-image-preview]");
+    const icon = wrapper.querySelector("[data-image-icon]");
+    if (file.files && file.files[0]) {
+      if (preview.src) URL.revokeObjectURL(preview.src);
+      preview.src = URL.createObjectURL(file.files[0]);
+      preview.hidden = false;
+      icon.hidden = true;
+    } else {
+      preview.hidden = true;
+      icon.hidden = false;
     }
   });
 

@@ -156,6 +156,11 @@ else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 PASSWORD_RESET_TIMEOUT = 2 * 60 * 60  # reset links are valid for 2 hours
 
+# --- Supabase Storage (option images) ---------------------------------------
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+SUPABASE_STORAGE_BUCKET = os.environ.get("SUPABASE_STORAGE_BUCKET", "option-images")
+
 # Abuse protection: scope -> (max attempts, window in seconds, "ip" | "user").
 RATE_LIMITS = {
     "vote": (60, 10 * 60, "ip"),

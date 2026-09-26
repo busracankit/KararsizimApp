@@ -4,6 +4,7 @@ from django import forms
 from django.db import transaction
 from django.utils import timezone
 
+from .storage import ImageError, process_image, upload_image, uploads_enabled
 from .models import REPORT_REASONS, CATEGORIES, DEFAULT_CATEGORY, MAX_OPTIONS, MIN_OPTIONS, Option, Poll
 
 OPTION_MAX_LENGTH = Option._meta.get_field("text").max_length
@@ -29,6 +30,7 @@ class PollCreateForm(forms.Form):
     Options arrive as repeated ``options`` inputs (``request.POST.getlist``) so the
     number of fields can change on the client. Blank fields are ignored; the
     remaining ones must be 2–5, at most 100 characters and unique (case-insensitive).
+    Each option may have an image in ``option_image_<index>`` (when storage is configured).
     """
 
     question = forms.CharField(
@@ -59,8 +61,8 @@ class PollCreateForm(forms.Form):
         initial="",
     )
 
-    def __init__(self, data=None, *args, **kwargs):
-        super().__init__(data, *args, **kwargs)
+    def __init__(self, data=None, files=None, *args, **kwargs):
+        super().__init__(data, files, *args, **kwargs)
         raw = data.getlist("options") if data is not None else []
         # Values shown back in the form: at least 2 inputs, at most 5.
         self.option_values = (list(raw) + ["", ""])[: max(MIN_OPTIONS, min(len(raw), MAX_OPTIONS))]
@@ -71,9 +73,13 @@ class PollCreateForm(forms.Form):
         cleaned = super().clean()
         raw = self.data.getlist("options")
         options, seen = [], {}
+        images_allowed = uploads_enabled()
         for index, value in enumerate(raw):
             text = value.strip()
+            upload = self.files.get(f"option_image_{index}") if images_allowed else None
             if not text:
+                if upload:
+                    self.option_errors[index] = "Görsel eklediğin seçeneğe bir metin de yaz."
                 continue
             if len(text) > OPTION_MAX_LENGTH:
                 self.option_errors[index] = f"Seçenek en fazla {OPTION_MAX_LENGTH} karakter olabilir."
@@ -83,7 +89,14 @@ class PollCreateForm(forms.Form):
                 self.option_errors[index] = "Bu seçeneği zaten yazdın."
                 continue
             seen[key] = index
-            options.append(text)
+            image = None
+            if upload:
+                try:
+                    image = process_image(upload)
+                except ImageError as error:
+                    self.option_errors[index] = str(error)
+                    continue
+            options.append((text, image))
 
         if len(raw) > MAX_OPTIONS or len(options) > MAX_OPTIONS:
             self.options_error = f"En fazla {MAX_OPTIONS} seçenek ekleyebilirsin."
@@ -95,18 +108,25 @@ class PollCreateForm(forms.Form):
         cleaned["options"] = options
         return cleaned
 
-    @transaction.atomic
+    @property
+    def has_images(self):
+        return any(image for _, image in self.cleaned_data.get("options", []))
+
     def save(self, author):
+        """Upload images first (may raise ImageError), then create poll + options atomically."""
+        urls = [upload_image(image) if image else "" for _, image in self.cleaned_data["options"]]
         length = DURATIONS[self.cleaned_data.get("duration") or ""][1]
-        poll = Poll.objects.create(
-            author=author,
-            question=self.cleaned_data["question"],
-            category=self.cleaned_data.get("category") or DEFAULT_CATEGORY,
-            closes_at=timezone.now() + length if length else None,
-        )
-        Option.objects.bulk_create(
-            Option(poll=poll, text=text, order=order) for order, text in enumerate(self.cleaned_data["options"])
-        )
+        with transaction.atomic():
+            poll = Poll.objects.create(
+                author=author,
+                question=self.cleaned_data["question"],
+                category=self.cleaned_data.get("category") or DEFAULT_CATEGORY,
+                closes_at=timezone.now() + length if length else None,
+            )
+            Option.objects.bulk_create(
+                Option(poll=poll, text=text, order=order, image_url=url)
+                for order, ((text, _), url) in enumerate(zip(self.cleaned_data["options"], urls))
+            )
         return poll
 
 

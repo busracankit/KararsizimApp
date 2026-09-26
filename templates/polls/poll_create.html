@@ -8,7 +8,7 @@
   <h1 class="auth-card__title">Neye karar veremiyorsun? 🤔</h1>
   <p class="auth-card__lead">Soruyu yaz, {{ min_options }}–{{ max_options }} seçenek ekle, gerisini topluluğa bırak.</p>
 
-  <form method="post" class="form" novalidate data-poll-form data-min="{{ min_options }}" data-max="{{ max_options }}">
+  <form method="post" class="form" novalidate enctype="multipart/form-data" data-poll-form data-min="{{ min_options }}" data-max="{{ max_options }}">
     {% csrf_token %}
     {% include "partials/field.html" with field=form.question %}
 
@@ -21,7 +21,7 @@
         {% endfor %}
       </ol>
       <button type="button" class="btn btn-ghost btn-sm add-option" data-add-option hidden>+ Seçenek ekle</button>
-      <p class="field-help" data-option-hint>En fazla {{ max_options }} seçenek. Boş bıraktığın alanlar eklenmez.</p>
+      <p class="field-help" data-option-hint>En fazla {{ max_options }} seçenek. Boş bıraktığın alanlar eklenmez.{% if images_enabled %} 🖼️ ile seçeneğe görsel ekleyebilirsin (JPG, PNG, WebP, GIF · en fazla 5 MB).{% endif %}</p>
     </fieldset>
 
     <div class="field{% if form.category.errors %} has-error{% endif %}">

@@ -70,6 +70,7 @@ class Option(models.Model):
     poll = models.ForeignKey(Poll, on_delete=models.CASCADE, related_name="options", verbose_name="anket")
     text = models.CharField("seçenek", max_length=100)
     order = models.PositiveSmallIntegerField("sıra", default=0)
+    image_url = models.URLField("görsel", max_length=500, blank=True)
 
     class Meta:
         ordering = ["order", "id"]

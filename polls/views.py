@@ -22,6 +22,7 @@ from .models import (
     Vote,
 )
 from .ratelimit import hit_rate_limit
+from .storage import ImageError, delete_images, uploads_enabled
 from .services import build_results, can_view, existing_vote, polls_with_counts, visible_polls, votes_by_poll
 
 POLLS_PER_PAGE = 10
@@ -156,24 +157,28 @@ def poll_detail(request, pk):
 
 @login_required
 def poll_create(request):
-    form = PollCreateForm(request.POST if request.method == "POST" else None)
+    form = PollCreateForm(*((request.POST, request.FILES) if request.method == "POST" else ()))
+    context = {
+        "form": form,
+        "min_options": MIN_OPTIONS,
+        "max_options": MAX_OPTIONS,
+        "images_enabled": uploads_enabled(),
+    }
     if request.method == "POST" and hit_rate_limit(request, "poll_create"):
         messages.error(request, "Kısa sürede çok fazla anket açtın. Biraz sonra tekrar dene.")
-        return render(
-            request,
-            "polls/poll_create.html",
-            {"form": form, "min_options": MIN_OPTIONS, "max_options": MAX_OPTIONS},
-            status=429,
-        )
+        return render(request, "polls/poll_create.html", context, status=429)
     if request.method == "POST" and form.is_valid():
-        poll = form.save(author=request.user)
+        if form.has_images and hit_rate_limit(request, "upload"):
+            messages.error(request, "Kısa sürede çok fazla görsel yükledin. Görselsiz dene ya da biraz bekle.")
+            return render(request, "polls/poll_create.html", context, status=429)
+        try:
+            poll = form.save(author=request.user)
+        except ImageError as error:
+            messages.error(request, str(error))
+            return render(request, "polls/poll_create.html", context)
         messages.success(request, "Anketin yayında! Linki paylaş, herkes oylasın 🎉")
         return redirect(poll)
-    return render(
-        request,
-        "polls/poll_create.html",
-        {"form": form, "min_options": MIN_OPTIONS, "max_options": MAX_OPTIONS},
-    )
+    return render(request, "polls/poll_create.html", context)
 
 
 @login_required
@@ -181,7 +186,9 @@ def poll_delete(request, pk):
     """Authors can delete their own poll after a confirmation step (POST only deletes)."""
     poll = get_object_or_404(polls_with_counts(), pk=pk, author=request.user)
     if request.method == "POST":
+        image_urls = [option.image_url for option in poll.options.all() if option.image_url]
         poll.delete()
+        delete_images(image_urls)
         messages.success(request, "Anketin silindi.")
         return redirect("user_profile", username=request.user.username)
     return render(request, "polls/poll_confirm_delete.html", {"poll": poll})
@@ -325,12 +332,15 @@ def poll_vote(request, pk):
 
 
 def _public(payload):
-    """Shape results exactly as the API contract: id, text, votes, percent."""
+    """Results in the API contract shape: id, text, votes, percent (+ image_url when the option has one)."""
+    results = []
+    for r in payload["results"]:
+        item = {"id": r["id"], "text": r["text"], "votes": r["votes"], "percent": r["percent"]}
+        if r["image_url"]:
+            item["image_url"] = r["image_url"]
+        results.append(item)
     return {
         "total_votes": payload["total_votes"],
         "voted_option_id": payload["voted_option_id"],
-        "results": [
-            {"id": r["id"], "text": r["text"], "votes": r["votes"], "percent": r["percent"]}
-            for r in payload["results"]
-        ],
+        "results": results,
     }

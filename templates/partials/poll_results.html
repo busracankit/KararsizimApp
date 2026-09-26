@@ -3,7 +3,7 @@
   {% for r in results.results %}
     <li class="result {{ r.color_class }}{% if r.is_winner %} is-winner{% endif %}{% if r.is_mine %} is-mine{% endif %}">
       <div class="result__row">
-        <span class="result__label">{{ r.text }}{% if r.is_mine %} <span class="result__mine">Senin oyun ✓</span>{% endif %}</span>
+        <span class="result__label">{% if r.image_url %}<img class="result__img" src="{{ r.image_url }}" alt="" loading="lazy" width="28" height="28">{% endif %}{{ r.text }}{% if r.is_mine %} <span class="result__mine">Senin oyun ✓</span>{% endif %}</span>
         <span class="result__meta">%{{ r.percent }} · {{ r.votes }} oy</span>
       </div>
       <div class="result__track" aria-hidden="true"><div class="result__fill" style="width: {{ r.percent }}%"></div></div>

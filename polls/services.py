@@ -63,6 +63,7 @@ def build_results(poll, voted_option_id=None):
                 "text": o.text,
                 "order": o.order,
                 "color_class": o.color_class,
+                "image_url": o.image_url,
                 "votes": counts[o.pk],
                 "percent": percent(counts[o.pk], total),
                 "is_winner": top > 0 and counts[o.pk] == top,

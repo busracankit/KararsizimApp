@@ -37,7 +37,16 @@
       if (mine) item.classList.add("is-mine");
 
       const row = el("div", "result__row");
-      const label = el("span", "result__label", r.text);
+      const label = el("span", "result__label");
+      if (r.image_url) {
+        const img = el("img", "result__img");
+        img.src = r.image_url;
+        img.alt = "";
+        img.width = 28;
+        img.height = 28;
+        label.appendChild(img);
+      }
+      label.appendChild(document.createTextNode(r.text));
       if (mine) {
         label.appendChild(document.createTextNode(" "));
         label.appendChild(el("span", "result__mine", "Senin oyun ✓"));
