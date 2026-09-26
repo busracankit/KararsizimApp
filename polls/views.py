@@ -2,13 +2,15 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db.models import Exists, OuterRef, Q
+from django.utils.http import urlencode
 from django.db import IntegrityError, transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from .forms import PollCreateForm
-from .models import MAX_OPTIONS, MIN_OPTIONS, Poll, Vote
+from .models import CATEGORIES, MAX_OPTIONS, MIN_OPTIONS, Option, Poll, Vote
 from .services import build_results, existing_vote, polls_with_counts, votes_by_poll
 
 POLLS_PER_PAGE = 10
@@ -46,12 +48,67 @@ def _paginate(request, queryset):
     return page, page_range
 
 
+SEARCH_MAX_LENGTH = 100
+
+
+def search_variants(text):
+    """The query plus a Turkish-uppercased copy.
+
+    Postgres UPPER() maps 'i' to 'I', so "istanbul" would not match "İstanbul".
+    Also searching for the Turkish uppercase form ("İSTANBUL") fixes that.
+    """
+    turkish_upper = text.replace("i", "İ").replace("ı", "I").upper()
+    return list(dict.fromkeys([text, turkish_upper]))
+
+
+def search_polls(queryset, text):
+    condition = Q()
+    for variant in search_variants(text):
+        option_match = Option.objects.filter(poll=OuterRef("pk"), text__icontains=variant)
+        condition |= Q(question__icontains=variant) | Exists(option_match)
+    return queryset.filter(condition)
+
+
 def poll_list(request):
     sort = request.GET.get("sirala", DEFAULT_SORT)
     if sort not in SORTS:
         sort = DEFAULT_SORT
-    page, page_range = _paginate(request, polls_with_counts().order_by(*SORTS[sort]))
-    return render(request, "polls/poll_list.html", {"page": page, "page_range": page_range, "sort": sort})
+    category = request.GET.get("kategori", "")
+    if category not in CATEGORIES:
+        category = ""
+    query = request.GET.get("q", "").strip()[:SEARCH_MAX_LENGTH]
+
+    polls = polls_with_counts()
+    if category:
+        polls = polls.filter(category=category)
+    if query:
+        polls = search_polls(polls, query)
+    page, page_range = _paginate(request, polls.order_by(*SORTS[sort]))
+
+    # Current filters, so every link keeps the others.
+    params = {"q": query, "kategori": category, "sirala": sort if sort != DEFAULT_SORT else ""}
+
+    def link(**changes):
+        merged = {k: v for k, v in {**params, **changes}.items() if v}
+        return "?" + urlencode(merged) if merged else "?"
+
+    context = {
+        "page": page,
+        "page_range": page_range,
+        "sort": sort,
+        "category": category,
+        "query": query,
+        "is_filtered": bool(category or query),
+        "sort_links": [
+            ("yeni", "✨ En yeni", link(sirala="")),
+            ("populer", "🔥 En çok oylanan", link(sirala="populer")),
+        ],
+        "category_links": [("", "Tümü", "🌈", link(kategori=""))]
+        + [(slug, label, emoji, link(kategori=slug)) for slug, (label, emoji) in CATEGORIES.items()],
+        "extra_query": urlencode({k: v for k, v in params.items() if v}),
+        "category_label": CATEGORIES[category][0] if category else "",
+    }
+    return render(request, "polls/poll_list.html", context)
 
 
 def user_profile(request, username):

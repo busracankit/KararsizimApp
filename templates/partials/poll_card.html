@@ -3,6 +3,7 @@
   <div class="poll-card__meta">
     <a class="poll-card__author" href="{% url 'user_profile' poll.author.username %}">@{{ poll.author.username }}</a> ·
     <time datetime="{{ poll.created_at|date:'c' }}" title="{{ poll.created_at|date:'j F Y H:i' }}">{{ poll.created_at|relative_time }}</time>
+    <a class="category-tag" href="{% url 'poll_list' %}?kategori={{ poll.category }}">{{ poll.category_emoji }} {{ poll.category_label }}</a>
   </div>
   <h2 class="poll-card__question"><a href="{{ poll.get_absolute_url }}">{{ poll.question }}</a></h2>
   {% include "partials/poll_body.html" %}

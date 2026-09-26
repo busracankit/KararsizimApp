@@ -6,6 +6,21 @@ from django.utils import timezone
 MIN_OPTIONS = 2
 MAX_OPTIONS = 5
 
+# slug -> (label, emoji). Order here is the order of the filter chips.
+CATEGORIES = {
+    "gunluk": ("Günlük hayat", "☕"),
+    "yemek": ("Yemek & içecek", "🍕"),
+    "alisveris": ("Alışveriş & moda", "🛍️"),
+    "eglence": ("Film, dizi & müzik", "🎬"),
+    "seyahat": ("Seyahat", "✈️"),
+    "teknoloji": ("Teknoloji", "📱"),
+    "iliskiler": ("İlişkiler", "💬"),
+    "kariyer": ("Okul & kariyer", "🎓"),
+    "spor": ("Spor & sağlık", "🏃"),
+    "diger": ("Diğer", "✨"),
+}
+DEFAULT_CATEGORY = "diger"
+
 
 class Poll(models.Model):
     author = models.ForeignKey(
@@ -14,6 +29,13 @@ class Poll(models.Model):
     question = models.CharField("soru", max_length=200, validators=[MinLengthValidator(5)])
     created_at = models.DateTimeField("oluşturulma", auto_now_add=True, db_index=True)
     closes_at = models.DateTimeField("oylama bitişi", null=True, blank=True, help_text="Boşsa anket süresiz açık kalır.")
+    category = models.CharField(
+        "kategori",
+        max_length=20,
+        choices=[(slug, label) for slug, (label, _) in CATEGORIES.items()],
+        default=DEFAULT_CATEGORY,
+        db_index=True,
+    )
 
     class Meta:
         ordering = ["-created_at", "-id"]
@@ -27,6 +49,14 @@ class Poll(models.Model):
         from django.urls import reverse
 
         return reverse("poll_detail", args=[self.pk])
+
+    @property
+    def category_label(self):
+        return CATEGORIES.get(self.category, CATEGORIES[DEFAULT_CATEGORY])[0]
+
+    @property
+    def category_emoji(self):
+        return CATEGORIES.get(self.category, CATEGORIES[DEFAULT_CATEGORY])[1]
 
     @property
     def is_closed(self):

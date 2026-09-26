@@ -24,6 +24,16 @@
       <p class="field-help" data-option-hint>En fazla {{ max_options }} seçenek. Boş bıraktığın alanlar eklenmez.</p>
     </fieldset>
 
+    <div class="field{% if form.category.errors %} has-error{% endif %}">
+      <label for="{{ form.category.id_for_label }}">{{ form.category.label }}</label>
+      <select name="category" id="{{ form.category.id_for_label }}">
+        {% for value, label in form.category.field.choices %}
+          <option value="{{ value }}"{% if form.category.value|default:"diger" == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      {% for error in form.category.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+    </div>
+
     <div class="field">
       <label for="{{ form.duration.id_for_label }}">{{ form.duration.label }}</label>
       <select name="duration" id="{{ form.duration.id_for_label }}">

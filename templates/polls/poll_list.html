@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 
+{% block title %}{% if query %}“{{ query }}” araması — Kararsızım{% elif category %}{{ category_label }} anketleri — Kararsızım{% else %}Kararsızım — Sor, herkes oylasın{% endif %}{% endblock %}
+
 {% block content %}
-{% if page.number == 1 %}
+{% if page.number == 1 and not is_filtered %}
 <section class="hero">
   <h1 class="hero__title">Kararsız mı kaldın? <span class="text-gradient">Sor, herkes oylasın.</span></h1>
   <p class="hero__text">Aklındaki seçenekleri yaz, topluluk senin yerine karar versin.</p>
@@ -9,26 +11,49 @@
 </section>
 {% endif %}
 
-{% if page.paginator.count %}
-<nav class="tabs" aria-label="Sıralama">
-  <a class="tabs__link{% if sort == 'yeni' %} is-active{% endif %}" href="{% url 'poll_list' %}"{% if sort == 'yeni' %} aria-current="page"{% endif %}>✨ En yeni</a>
-  <a class="tabs__link{% if sort == 'populer' %} is-active{% endif %}" href="{% url 'poll_list' %}?sirala=populer"{% if sort == 'populer' %} aria-current="page"{% endif %}>🔥 En çok oylanan</a>
+<form method="get" action="{% url 'poll_list' %}" class="search" role="search">
+  <label class="visually-hidden" for="search-input">Anketlerde ara</label>
+  <input type="search" id="search-input" name="q" value="{{ query }}" maxlength="100" placeholder="🔎 Anketlerde ara…" autocomplete="off">
+  {% if category %}<input type="hidden" name="kategori" value="{{ category }}">{% endif %}
+  {% if sort != "yeni" %}<input type="hidden" name="sirala" value="{{ sort }}">{% endif %}
+  <button type="submit" class="btn btn-primary btn-sm">Ara</button>
+</form>
+
+<nav class="chips" aria-label="Kategoriler">
+  {% for slug, label, emoji, url in category_links %}
+    <a class="chip{% if slug == category %} is-active{% endif %}" href="{{ url }}"{% if slug == category %} aria-current="page"{% endif %}><span aria-hidden="true">{{ emoji }}</span> {{ label }}</a>
+  {% endfor %}
 </nav>
-{% endif %}
+
+<div class="feed-toolbar">
+  <nav class="tabs" aria-label="Sıralama">
+    {% for key, label, url in sort_links %}
+      <a class="tabs__link{% if sort == key %} is-active{% endif %}" href="{{ url }}"{% if sort == key %} aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+  {% if is_filtered %}
+    <p class="feed-toolbar__summary">
+      {{ page.paginator.count }} anket{% if query %} · “{{ query }}”{% endif %}{% if category %} · {{ category_label }}{% endif %}
+      · <a href="{% url 'poll_list' %}">Filtreleri temizle</a>
+    </p>
+  {% endif %}
+</div>
 
 {% for poll in page.object_list %}
   {% include "partials/poll_card.html" %}
 {% empty %}
   <section class="card empty-state">
-    <div class="empty-state__icon" aria-hidden="true">🗳️</div>
-    <p class="empty-state__text">Henüz anket yok. İlk kararsızlığı sen paylaş ✨</p>
-    <a href="{% url 'poll_create' %}" class="btn btn-primary">Anket Oluştur</a>
+    {% if is_filtered %}
+      <div class="empty-state__icon" aria-hidden="true">🔍</div>
+      <p class="empty-state__text">{% if query %}“{{ query }}” için{% else %}Bu kategoride{% endif %} henüz anket yok.</p>
+      <a href="{% url 'poll_create' %}" class="btn btn-primary">İlk soran sen ol</a>
+    {% else %}
+      <div class="empty-state__icon" aria-hidden="true">🗳️</div>
+      <p class="empty-state__text">Henüz anket yok. İlk kararsızlığı sen paylaş ✨</p>
+      <a href="{% url 'poll_create' %}" class="btn btn-primary">Anket Oluştur</a>
+    {% endif %}
   </section>
 {% endfor %}
 
-{% if sort == "populer" %}
-  {% include "partials/pagination.html" with extra_query="sirala=populer" %}
-{% else %}
-  {% include "partials/pagination.html" %}
-{% endif %}
+{% include "partials/pagination.html" %}
 {% endblock %}
