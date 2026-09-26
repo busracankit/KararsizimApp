@@ -5,7 +5,7 @@
       <button type="button" class="theme-toggle" data-theme-toggle aria-label="Karanlık moda geç" hidden>🌙</button>
       {% if user.is_authenticated %}
         <a href="{% url 'user_profile' user.username %}" class="navbar__user">@{{ user.username }}</a>
-        <a href="{% url 'poll_create' %}" class="btn btn-primary btn-sm">Anket oluştur</a>
+        <a href="{% url 'poll_create' %}" class="btn btn-primary btn-sm" aria-label="Anket oluştur"><span class="label-long">Anket oluştur</span><span class="label-short">+ Anket</span></a>
         <form method="post" action="{% url 'logout' %}" class="navbar__logout">
           {% csrf_token %}
           <button type="submit" class="btn btn-ghost btn-sm">Çıkış</button>

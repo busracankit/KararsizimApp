@@ -290,9 +290,13 @@ a { color: var(--primary); }
 }
 .form-alert p { margin: 0; }
 
+.label-short { display: none; }
 @media (max-width: 400px) {
   .navbar__user { display: none; }
   .navbar__actions { gap: 6px; }
+  .label-long { display: none; }
+  .label-short { display: inline; }
+  .theme-toggle { width: 32px; height: 32px; font-size: 14px; }
   .logo { font-size: 19px; }
   .navbar .btn-sm { padding: 7px 11px; font-size: 13px; }
 }
@@ -698,3 +702,8 @@ a.poll-card__author:hover { color: var(--primary); text-decoration: underline; }
   cursor: pointer;
 }
 .theme-toggle:hover { border-color: var(--primary); }
+@media (max-width: 370px) {
+  .logo { font-size: 17px; }
+  .navbar__actions { gap: 4px; }
+  .navbar .btn-sm { padding: 6px 9px; }
+}
