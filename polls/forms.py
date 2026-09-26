@@ -4,7 +4,7 @@ from django import forms
 from django.db import transaction
 from django.utils import timezone
 
-from .models import CATEGORIES, DEFAULT_CATEGORY, MAX_OPTIONS, MIN_OPTIONS, Option, Poll
+from .models import REPORT_REASONS, CATEGORIES, DEFAULT_CATEGORY, MAX_OPTIONS, MIN_OPTIONS, Option, Poll
 
 OPTION_MAX_LENGTH = Option._meta.get_field("text").max_length
 
@@ -108,3 +108,28 @@ class PollCreateForm(forms.Form):
             Option(poll=poll, text=text, order=order) for order, text in enumerate(self.cleaned_data["options"])
         )
         return poll
+
+
+class ReportForm(forms.Form):
+    reason = forms.ChoiceField(
+        label="Neden şikayet ediyorsun?",
+        choices=list(REPORT_REASONS.items()),
+        widget=forms.RadioSelect,
+        error_messages={"required": "Bir sebep seç.", "invalid_choice": "Geçersiz sebep."},
+    )
+    note = forms.CharField(
+        label="Eklemek istediğin bir şey var mı? (isteğe bağlı)",
+        max_length=300,
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 3}),
+        error_messages={"max_length": "En fazla 300 karakter yazabilirsin."},
+    )
+
+
+class CommentForm(forms.Form):
+    text = forms.CharField(
+        label="Yorumun",
+        max_length=500,
+        widget=forms.Textarea(attrs={"rows": 3, "placeholder": "Sen olsan hangisini seçerdin, neden?", "maxlength": 500}),
+        error_messages={"required": "Boş yorum gönderemezsin.", "max_length": "Yorum en fazla 500 karakter olabilir."},
+    )

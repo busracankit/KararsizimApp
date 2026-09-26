@@ -1,19 +1,40 @@
 """Vote counting and "has this visitor voted?" lookups shared by views and templates."""
-from django.db.models import Count, Prefetch, Q
+from django.db.models import Count, IntegerField, OuterRef, Prefetch, Q, Subquery
+from django.db.models.functions import Coalesce
 
-from .models import Option, Poll, Vote
+from .models import Comment, Option, Poll, Vote
+
+
+def _count_subquery(model, **filters):
+    rows = model.objects.filter(poll=OuterRef("pk"), **filters).order_by().values("poll")
+    return Coalesce(Subquery(rows.annotate(n=Count("pk")).values("n")[:1], output_field=IntegerField()), 0)
 
 
 def polls_with_counts():
-    """Polls with author, total vote count and options annotated with their vote counts."""
+    """Polls with author, vote and comment counts, and options annotated with their vote counts.
+
+    Counts are correlated subqueries (not JOIN + GROUP BY) so they stay correct and cheap
+    when combined with each other and with search filters.
+    """
     options = Option.objects.annotate(votes_count=Count("votes")).order_by("order", "id")
     return (
         Poll.objects.select_related("author")
-        .annotate(total_votes=Count("votes", distinct=True))
+        .annotate(
+            total_votes=_count_subquery(Vote),
+            comment_count=_count_subquery(Comment, is_hidden=False),
+        )
         .prefetch_related(Prefetch("options", queryset=options))
-        # Meta.ordering is ignored in GROUP BY (annotate) queries, so order explicitly.
         .order_by("-created_at", "-id")
     )
+
+
+def visible_polls():
+    """Polls shown in public lists (feed, search, profiles)."""
+    return polls_with_counts().filter(is_hidden=False)
+
+
+def can_view(user, poll):
+    return not poll.is_hidden or user.is_staff or user == poll.author
 
 
 def percent(votes, total):

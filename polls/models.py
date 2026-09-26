@@ -36,6 +36,9 @@ class Poll(models.Model):
         default=DEFAULT_CATEGORY,
         db_index=True,
     )
+    is_hidden = models.BooleanField(
+        "gizli", default=False, db_index=True, help_text="Gizli anketler akışta görünmez; sadece sahibi ve yöneticiler açabilir."
+    )
 
     class Meta:
         ordering = ["-created_at", "-id"]
@@ -139,3 +142,58 @@ class RateLimitHit(models.Model):
         verbose_name = "hız sınırı kaydı"
         verbose_name_plural = "hız sınırı kayıtları"
         indexes = [models.Index(fields=["scope", "key", "created_at"], name="ratelimit_lookup")]
+
+
+REPORT_REASONS = {
+    "spam": "Spam / reklam",
+    "hakaret": "Hakaret veya nefret söylemi",
+    "uygunsuz": "Cinsel ya da uygunsuz içerik",
+    "kisisel": "Kişisel bilgi paylaşımı",
+    "diger": "Diğer",
+}
+# Unresolved reports needed to hide a poll automatically until a moderator reviews it.
+REPORT_AUTO_HIDE_THRESHOLD = 5
+
+
+class Report(models.Model):
+    poll = models.ForeignKey(Poll, on_delete=models.CASCADE, related_name="reports", verbose_name="anket")
+    reporter = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="şikayet eden"
+    )
+    voter_token = models.CharField("ziyaretçi anahtarı", max_length=36)
+    reason = models.CharField("sebep", max_length=20, choices=list(REPORT_REASONS.items()))
+    note = models.CharField("açıklama", max_length=300, blank=True)
+    created_at = models.DateTimeField("tarih", auto_now_add=True)
+    resolved = models.BooleanField("incelendi", default=False, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "şikayet"
+        verbose_name_plural = "şikayetler"
+        constraints = [
+            models.UniqueConstraint(fields=["poll", "voter_token"], name="unique_report_per_browser"),
+            models.UniqueConstraint(
+                fields=["poll", "reporter"], condition=models.Q(reporter__isnull=False), name="unique_report_per_user"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.get_reason_display()} → {self.poll}"
+
+
+class Comment(models.Model):
+    poll = models.ForeignKey(Poll, on_delete=models.CASCADE, related_name="comments", verbose_name="anket")
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="comments", verbose_name="yazar"
+    )
+    text = models.CharField("yorum", max_length=500)
+    created_at = models.DateTimeField("tarih", auto_now_add=True)
+    is_hidden = models.BooleanField("gizli", default=False, db_index=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+        verbose_name = "yorum"
+        verbose_name_plural = "yorumlar"
+
+    def __str__(self):
+        return self.text[:60]

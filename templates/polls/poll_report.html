@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Şikayet et — Kararsızım{% endblock %}
+
+{% block content %}
+<section class="card form-card">
+  <h1 class="auth-card__title">Bu anketi şikayet et ⚑</h1>
+  <p class="confirm-card__question">“{{ poll.question }}”</p>
+  <p class="auth-card__lead">Şikayetler moderatörler tarafından incelenir. Çok sayıda şikayet alan anketler inceleme bitene kadar gizlenir.</p>
+
+  <form method="post" class="form" novalidate>
+    {% csrf_token %}
+    <fieldset class="options-field{% if form.reason.errors %} has-error{% endif %}">
+      <legend>{{ form.reason.label }}</legend>
+      {% for error in form.reason.errors %}<p class="field-error" role="alert">{{ error }}</p>{% endfor %}
+      <div class="radio-list">
+        {% for radio in form.reason %}
+          <label class="radio">{{ radio.tag }} <span>{{ radio.choice_label }}</span></label>
+        {% endfor %}
+      </div>
+    </fieldset>
+    {% include "partials/field.html" with field=form.note %}
+    <div class="confirm-card__actions">
+      <button type="submit" class="btn btn-danger">Şikayeti gönder</button>
+      <a href="{{ poll.get_absolute_url }}" class="btn btn-ghost">Vazgeç</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

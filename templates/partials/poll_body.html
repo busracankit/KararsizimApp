@@ -14,7 +14,7 @@
   {% endif %}
   <p class="poll-card__notice" data-vote-notice role="status" aria-live="polite" hidden></p>
   <div class="poll-card__footer">
-    <span><span data-total-votes>{{ poll.total_votes }}</span> oy{% if not poll.show_results %}<span class="poll-card__hint"> · Oy ver, sonuçları gör</span>{% endif %}</span>
+    <span><span data-total-votes>{{ poll.total_votes }}</span> oy{% if poll.comment_count %} · <a class="poll-card__comments" href="{{ poll.get_absolute_url }}#yorumlar">💬 {{ poll.comment_count }}</a>{% endif %}{% if not poll.show_results %}<span class="poll-card__hint"> · Oy ver, sonuçları gör</span>{% endif %}</span>
     {% if poll.is_closed %}
       <span class="poll-status poll-status--closed">🔒 Oylama kapandı</span>
     {% elif poll.closes_at %}

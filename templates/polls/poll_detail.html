@@ -9,6 +9,10 @@
 {% block content %}
 <a href="{% url 'poll_list' %}" class="back-link">‹ Tüm anketler</a>
 
+{% if poll.is_hidden %}
+  <div class="flash flash--warning" role="note">Bu anket şikayetler nedeniyle gizlendi; akışta görünmüyor. Moderatör inceledikten sonra tekrar açılabilir.</div>
+{% endif %}
+
 <article class="card poll-card poll-detail">
   <div class="poll-card__meta">
     <a class="poll-card__author" href="{% url 'user_profile' poll.author.username %}">@{{ poll.author.username }}</a> ·
@@ -21,8 +25,42 @@
     <button type="button" class="btn btn-ghost btn-sm" data-copy-link hidden>🔗 Linki kopyala</button>
     {% if user == poll.author %}
       <a href="{% url 'poll_delete' poll.pk %}" class="btn btn-ghost btn-sm btn-danger-ghost">🗑 Anketi sil</a>
+    {% elif can_report %}
+      <a href="{% url 'poll_report' poll.pk %}" class="btn btn-ghost btn-sm btn-quiet">⚑ Şikayet et</a>
     {% endif %}
     <span class="poll-detail__date">{{ poll.created_at|date:"j F Y, H:i" }}</span>
   </div>
 </article>
+
+<section class="card comments" id="yorumlar" aria-labelledby="yorumlar-baslik">
+  <h2 class="comments__title" id="yorumlar-baslik">💬 Yorumlar <span class="comments__count">{{ comments|length }}</span></h2>
+  {% for comment in comments %}
+    <article class="comment" id="yorum-{{ comment.pk }}">
+      <div class="comment__meta">
+        <a class="poll-card__author" href="{% url 'user_profile' comment.author.username %}">@{{ comment.author.username }}</a>
+        {% if comment.author == poll.author %}<span class="comment__badge">anket sahibi</span>{% endif %}
+        · <time datetime="{{ comment.created_at|date:'c' }}" title="{{ comment.created_at|date:'j F Y H:i' }}">{{ comment.created_at|relative_time }}</time>
+        {% if user == comment.author or user == poll.author %}
+          <form method="post" action="{% url 'comment_delete' comment.pk %}" class="comment__delete">
+            {% csrf_token %}
+            <button type="submit" class="link-button" aria-label="Yorumu sil">Sil</button>
+          </form>
+        {% endif %}
+      </div>
+      <p class="comment__text">{{ comment.text|linebreaksbr }}</p>
+    </article>
+  {% empty %}
+    <p class="comments__empty">Henüz yorum yok. İlk fikri sen söyle!</p>
+  {% endfor %}
+
+  {% if user.is_authenticated %}
+    <form method="post" action="{% url 'comment_create' poll.pk %}" class="form comment-form">
+      {% csrf_token %}
+      {% include "partials/field.html" with field=comment_form.text %}
+      <button type="submit" class="btn btn-primary btn-sm">Yorum yap</button>
+    </form>
+  {% else %}
+    <p class="comments__login"><a href="{% url 'login' %}?next={{ request.path|urlencode }}%23yorumlar">Giriş yap</a> ya da <a href="{% url 'register' %}?next={{ request.path|urlencode }}%23yorumlar">kayıt ol</a>, yorum yaz.</p>
+  {% endif %}
+</section>
 {% endblock %}

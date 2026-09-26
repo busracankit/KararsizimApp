@@ -2,17 +2,27 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db.models import Exists, OuterRef, Q
-from django.utils.http import urlencode
 from django.db import IntegrityError, transaction
-from django.http import JsonResponse
+from django.db.models import Exists, OuterRef, Q
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.http import urlencode
 from django.views.decorators.http import require_POST
 
-from .forms import PollCreateForm
+from .forms import CommentForm, PollCreateForm, ReportForm
+from .models import (
+    CATEGORIES,
+    MAX_OPTIONS,
+    MIN_OPTIONS,
+    REPORT_AUTO_HIDE_THRESHOLD,
+    Comment,
+    Option,
+    Poll,
+    Report,
+    Vote,
+)
 from .ratelimit import hit_rate_limit
-from .models import CATEGORIES, MAX_OPTIONS, MIN_OPTIONS, Option, Poll, Vote
-from .services import build_results, existing_vote, polls_with_counts, votes_by_poll
+from .services import build_results, can_view, existing_vote, polls_with_counts, visible_polls, votes_by_poll
 
 POLLS_PER_PAGE = 10
 
@@ -79,7 +89,7 @@ def poll_list(request):
         category = ""
     query = request.GET.get("q", "").strip()[:SEARCH_MAX_LENGTH]
 
-    polls = polls_with_counts()
+    polls = visible_polls()
     if category:
         polls = polls.filter(category=category)
     if query:
@@ -115,7 +125,7 @@ def poll_list(request):
 def user_profile(request, username):
     """Public profile: username, join date and the user's polls. Never shows the email."""
     profile_user = get_object_or_404(get_user_model(), username__iexact=username, is_active=True)
-    polls = polls_with_counts().filter(author=profile_user)
+    polls = visible_polls().filter(author=profile_user)
     page, page_range = _paginate(request, polls)
     return render(
         request,
@@ -124,10 +134,24 @@ def user_profile(request, username):
     )
 
 
+def _visible_poll_or_404(request, queryset, pk):
+    poll = get_object_or_404(queryset, pk=pk)
+    if not can_view(request.user, poll):
+        raise Http404
+    return poll
+
+
 def poll_detail(request, pk):
-    poll = get_object_or_404(polls_with_counts(), pk=pk)
+    poll = _visible_poll_or_404(request, polls_with_counts(), pk)
     _attach_vote_state(request, [poll])
-    return render(request, "polls/poll_detail.html", {"poll": poll})
+    comments = poll.comments.filter(is_hidden=False).select_related("author")
+    context = {
+        "poll": poll,
+        "comments": comments,
+        "comment_form": CommentForm(),
+        "can_report": request.user != poll.author,
+    }
+    return render(request, "polls/poll_detail.html", context)
 
 
 @login_required
@@ -163,6 +187,73 @@ def poll_delete(request, pk):
     return render(request, "polls/poll_confirm_delete.html", {"poll": poll})
 
 
+def poll_report(request, pk):
+    """Anyone (visitor or member) can report a poll once per browser/account."""
+    poll = _visible_poll_or_404(request, Poll.objects.select_related("author"), pk)
+    if request.user == poll.author:
+        messages.info(request, "Kendi anketini şikayet edemezsin; istersen silebilirsin.")
+        return redirect(poll)
+    user = request.user if request.user.is_authenticated else None
+    already = Report.objects.filter(poll=poll).filter(
+        Q(voter_token=request.voter_token) | (Q(reporter=user) if user else Q(pk__in=[]))
+    ).exists()
+    if already:
+        messages.info(request, "Bu anketi zaten şikayet ettin. Teşekkürler, inceleniyor.")
+        return redirect(poll)
+
+    form = ReportForm(request.POST or None)
+    if request.method == "POST":
+        if hit_rate_limit(request, "report"):
+            messages.error(request, "Kısa sürede çok fazla şikayet gönderdin. Biraz sonra tekrar dene.")
+            return redirect(poll)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    Report.objects.create(
+                        poll=poll,
+                        reporter=user,
+                        voter_token=request.voter_token,
+                        reason=form.cleaned_data["reason"],
+                        note=form.cleaned_data["note"],
+                    )
+            except IntegrityError:
+                pass
+            open_reports = poll.reports.filter(resolved=False).count()
+            if open_reports >= REPORT_AUTO_HIDE_THRESHOLD and not poll.is_hidden:
+                Poll.objects.filter(pk=poll.pk).update(is_hidden=True)
+            messages.success(request, "Teşekkürler, şikayetin moderatörlere iletildi.")
+            return redirect(poll)
+    return render(request, "polls/poll_report.html", {"poll": poll, "form": form})
+
+
+@login_required
+@require_POST
+def comment_create(request, pk):
+    poll = _visible_poll_or_404(request, Poll.objects.all(), pk)
+    if hit_rate_limit(request, "comment"):
+        messages.error(request, "Çok hızlı yorum yapıyorsun, biraz bekle.")
+        return redirect(f"{poll.get_absolute_url()}#yorumlar")
+    form = CommentForm(request.POST)
+    if form.is_valid():
+        comment = Comment.objects.create(poll=poll, author=request.user, text=form.cleaned_data["text"])
+        return redirect(f"{poll.get_absolute_url()}#yorum-{comment.pk}")
+    messages.error(request, form.errors["text"][0])
+    return redirect(f"{poll.get_absolute_url()}#yorumlar")
+
+
+@login_required
+@require_POST
+def comment_delete(request, pk):
+    """The comment's author or the poll's author may delete a comment."""
+    comment = get_object_or_404(Comment.objects.select_related("poll"), pk=pk)
+    if request.user not in (comment.author, comment.poll.author):
+        raise Http404
+    poll = comment.poll
+    comment.delete()
+    messages.success(request, "Yorum silindi.")
+    return redirect(f"{poll.get_absolute_url()}#yorumlar")
+
+
 def _wants_json(request):
     return "application/json" in request.headers.get("Accept", "")
 
@@ -176,7 +267,7 @@ def poll_vote(request, pk):
     - 403 ``poll_closed`` once ``closes_at`` has passed (results are still returned).
     - Every results payload also carries ``can_change`` and ``closed``.
     """
-    poll = get_object_or_404(Poll, pk=pk)
+    poll = _visible_poll_or_404(request, Poll.objects.all(), pk)
     as_json = _wants_json(request)
     if hit_rate_limit(request, "vote"):
         if as_json:
