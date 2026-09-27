@@ -114,6 +114,8 @@ python manage.py test
 
 ## Kurallar (kısa)
 
+- **Güvenlik/doğruluk incelemesi:** projede `.claude/skills/code-review-security/` skill'i var. Kod incelemesi, "canlıya hazır mı?" sorularında ve Python/SQL/Supabase kodu yazdıktan sonra (self-check modu) bu skill'i kullan.
+
 - Kod, değişken adları ve yorumlar **İngilizce**; arayüz metinleri ve URL'ler **Türkçe**.
 - E-posta hiçbir template'te, JSON yanıtında veya admin dışı yerde görünmez. Yeni bir sayfa eklerken bunu test et.
 - Yeni paket eklemeden önce kullanıcıya sor (izinli liste: `requirements.txt`).
