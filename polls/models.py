@@ -152,7 +152,7 @@ REPORT_REASONS = {
     "kisisel": "Kişisel bilgi paylaşımı",
     "diger": "Diğer",
 }
-# Unresolved reports needed to hide a poll automatically until a moderator reviews it.
+# Unresolved reports from this many *different members* hide a poll until a moderator reviews it.
 REPORT_AUTO_HIDE_THRESHOLD = 5
 
 

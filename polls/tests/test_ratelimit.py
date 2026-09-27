@@ -60,12 +60,15 @@ class RateLimitTests(TestCase):
         self.assertEqual(r.status_code, 429)
         self.assertFalse(User.objects.filter(username="yeni2").exists())
 
-    def test_client_ip_prefers_proxy_headers(self):
+    def test_client_ip_uses_proxy_headers_only_when_trusted(self):
         from django.test import RequestFactory
         rf = RequestFactory()
-        self.assertEqual(client_ip(rf.get("/", HTTP_X_REAL_IP="9.9.9.9", REMOTE_ADDR="1.1.1.1")), "9.9.9.9")
-        self.assertEqual(client_ip(rf.get("/", HTTP_X_FORWARDED_FOR="8.8.8.8, 10.0.0.1")), "8.8.8.8")
-        self.assertEqual(client_ip(rf.get("/", REMOTE_ADDR="1.1.1.1")), "1.1.1.1")
+        spoofed = rf.get("/", HTTP_X_FORWARDED_FOR="8.8.8.8, 10.0.0.1", HTTP_X_REAL_IP="9.9.9.9", REMOTE_ADDR="1.1.1.1")
+        with self.settings(TRUST_PROXY_HEADERS=False):
+            self.assertEqual(client_ip(spoofed), "1.1.1.1")
+        with self.settings(TRUST_PROXY_HEADERS=True):
+            self.assertEqual(client_ip(spoofed), "8.8.8.8")  # Vercel overwrites X-Forwarded-For
+            self.assertEqual(client_ip(rf.get("/", HTTP_X_REAL_IP="9.9.9.9", REMOTE_ADDR="1.1.1.1")), "9.9.9.9")
 
     def test_hits_are_recorded(self):
         self.client.post(reverse("login"), {"email": "x@example.com", "password": "y"})

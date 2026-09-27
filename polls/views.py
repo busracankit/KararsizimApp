@@ -236,8 +236,13 @@ def poll_report(request, pk):
                     )
             except IntegrityError:
                 pass
-            open_reports = poll.reports.filter(resolved=False).count()
-            if open_reports >= REPORT_AUTO_HIDE_THRESHOLD and not poll.is_hidden:
+            # Only distinct members count toward auto-hiding. Visitor reports are still stored for
+            # moderators, but a visitor can get a fresh cookie on every request, so counting them
+            # would let one person hide any poll.
+            member_reports = (
+                poll.reports.filter(resolved=False, reporter__isnull=False).values("reporter").distinct().count()
+            )
+            if member_reports >= REPORT_AUTO_HIDE_THRESHOLD and not poll.is_hidden:
                 Poll.objects.filter(pk=poll.pk).update(is_hidden=True)
             messages.success(request, "Teşekkürler, şikayetin moderatörlere iletildi.")
             return redirect(poll)
@@ -326,6 +331,13 @@ def poll_vote(request, pk):
                 previous.save(update_fields=["option"])
             return respond(200, True, "Oyun güncellendi ✓", "success", option.pk, True)
         return respond(409, False, "Bu ankete zaten oy vermişsin.", "info", my_option, mine, "already_voted")
+
+    if not request.user.is_authenticated and hit_rate_limit(request, "visitor_vote_per_poll", suffix=poll.pk):
+        # Many visitor votes for this poll from one network: likely scripted. Members can still vote.
+        if as_json:
+            return JsonResponse({"ok": False, "error": "login_required"}, status=429)
+        messages.info(request, "Bu ağdan bu ankete çok fazla oy verildi. Oy vermek için giriş yap.")
+        return redirect(poll)
 
     try:
         with transaction.atomic():

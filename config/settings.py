@@ -39,6 +39,14 @@ if not SECRET_KEY:
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
 
+# On Vercel, also accept this deployment's own exact hostnames (production, branch and
+# per-deployment URLs) so settings never need a "*.vercel.app" wildcard.
+for _name in ("VERCEL_PROJECT_PRODUCTION_URL", "VERCEL_BRANCH_URL", "VERCEL_URL"):
+    _host = os.environ.get(_name, "").strip()
+    if _host and _host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_host)
+        CSRF_TRUSTED_ORIGINS.append(f"https://{_host}")
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -162,12 +170,19 @@ SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 SUPABASE_STORAGE_BUCKET = os.environ.get("SUPABASE_STORAGE_BUCKET", "option-images")
 
 # Abuse protection: scope -> (max attempts, window in seconds, "ip" | "user").
+# Client IP comes from proxy headers only behind a proxy that overwrites them (Vercel sets VERCEL=1).
+TRUST_PROXY_HEADERS = env_bool("TRUST_PROXY_HEADERS", bool(os.environ.get("VERCEL")))
+
 RATE_LIMITS = {
     "vote": (60, 10 * 60, "ip"),
+    # Visitors (no account) per poll per network: stops scripted vote stuffing. Members are not limited by this.
+    "visitor_vote_per_poll": (3, 24 * 60 * 60, "ip"),
     "poll_create": (5, 60 * 60, "user"),
     "comment": (10, 10 * 60, "user"),
     "report": (10, 60 * 60, "ip"),
     "login": (10, 15 * 60, "ip"),
+    # Per target account, from any IP (slows distributed password guessing; also used by /admin/).
+    "login_account": (20, 15 * 60, "global"),
     "register": (5, 60 * 60, "ip"),
     "password_reset": (5, 60 * 60, "ip"),
     "upload": (20, 60 * 60, "user"),

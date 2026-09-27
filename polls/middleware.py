@@ -13,6 +13,16 @@ def _valid_token(value):
         return False
 
 
+def _publicly_cacheable(response):
+    """True for responses a CDN may store and serve to everyone (e.g. the share image).
+
+    A Set-Cookie on such a response could be cached too, handing the same voter ID to
+    every visitor, so no cookie is attached there.
+    """
+    cache_control = response.get("Cache-Control", "").lower()
+    return "public" in cache_control or "s-maxage" in cache_control
+
+
 class VoterCookieMiddleware:
     """Give every browser a random, anonymous ID used to limit votes to one per poll.
 
@@ -32,7 +42,7 @@ class VoterCookieMiddleware:
 
         response = self.get_response(request)
 
-        if is_new:
+        if is_new and not _publicly_cacheable(response):
             response.set_cookie(
                 VOTER_COOKIE_NAME,
                 token,

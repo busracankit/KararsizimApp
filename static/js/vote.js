@@ -7,6 +7,7 @@
     already_voted: "Bu ankete zaten oy vermişsin.",
     poll_closed: "Bu anketin oylaması kapandı.",
     rate_limited: "Çok hızlı gidiyorsun, biraz bekleyip tekrar dene.",
+    login_required: "Bu ağdan bu ankete çok fazla oy verildi. Oy vermek için giriş yap.",
     invalid_option: "Bu seçenek geçersiz. Sayfayı yenileyip tekrar dene.",
     network: "Bağlantı sorunu oldu, oyun kaydedilmedi. Tekrar dene.",
   };

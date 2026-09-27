@@ -34,8 +34,8 @@ python manage.py test
 |---|---|---|---|
 | `DJANGO_SECRET_KEY` | herhangi bir değer | uzun rastgele değer (aşağıdaki komut) | **Evet** |
 | `DJANGO_DEBUG` | `True` | `False` | Hayır |
-| `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1` | `.vercel.app` | Hayır |
-| `DJANGO_CSRF_TRUSTED_ORIGINS` | — | `https://*.vercel.app` | Hayır |
+| `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1` | `kararsizim-liard.vercel.app` (joker yok; deploy'a özel adresler `VERCEL_URL` ile otomatik eklenir) | Hayır |
+| `DJANGO_CSRF_TRUSTED_ORIGINS` | — | `https://kararsizim-liard.vercel.app` | Hayır |
 | `DATABASE_URL` | boş (SQLite) | Supabase Transaction pooler dizesi | **Evet** |
 | `SUPABASE_URL` | isteğe bağlı | `https://mzggagkmnkajelekvnxr.supabase.co` | Hayır |
 | `SUPABASE_SERVICE_ROLE_KEY` | isteğe bağlı | Supabase → Project Settings → API Keys → secret / service_role | **Evet** |

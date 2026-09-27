@@ -10,6 +10,27 @@
     }, 4000);
   });
 
+  // Prevent double submits (double click / slow network) on normal POST forms.
+  // Voting forms are excluded: vote.js handles them with fetch and its own busy state.
+  document.querySelectorAll("form[method=post]:not([data-vote-form])").forEach(function (form) {
+    form.addEventListener("submit", function () {
+      if (form.dataset.submitting) return;
+      form.dataset.submitting = "1";
+      // Disable after the browser has read the clicked button's name/value.
+      setTimeout(function () {
+        form.querySelectorAll("button[type=submit]").forEach(function (b) { b.disabled = true; });
+      }, 0);
+    });
+  });
+  // Coming back via the browser's back button restores a page from cache: re-enable its forms.
+  window.addEventListener("pageshow", function (event) {
+    if (!event.persisted) return;
+    document.querySelectorAll("form[data-submitting]").forEach(function (form) {
+      delete form.dataset.submitting;
+      form.querySelectorAll("button[type=submit]").forEach(function (b) { b.disabled = false; });
+    });
+  });
+
   // Light / dark toggle. Without a saved choice the OS setting is used.
   const toggle = document.querySelector("[data-theme-toggle]");
   if (toggle) {

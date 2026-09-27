@@ -50,11 +50,23 @@ class ReportTests(TestCase):
         self.assertContains(r, "Kendi anketini şikayet edemezsin")
         self.assertNotContains(c.get(self.poll.get_absolute_url()), "Şikayet et")
 
-    def test_auto_hide_after_threshold(self):
-        for _ in range(REPORT_AUTO_HIDE_THRESHOLD):
-            self.browser().post(self.url, {"reason": "spam"})
+    def test_auto_hide_after_threshold_of_distinct_members(self):
+        for i in range(REPORT_AUTO_HIDE_THRESHOLD):
+            self.poll.refresh_from_db()
+            self.assertFalse(self.poll.is_hidden)
+            c = self.browser()
+            c.force_login(User.objects.create_user(f"uye{i}", f"uye{i}@example.com", PASSWORD))
+            c.post(self.url, {"reason": "spam"})
         self.poll.refresh_from_db()
         self.assertTrue(self.poll.is_hidden)
+
+    def test_visitor_reports_never_auto_hide(self):
+        # A visitor gets a fresh cookie per request; many "different" visitors may be one person.
+        for _ in range(REPORT_AUTO_HIDE_THRESHOLD * 2):
+            Client(REMOTE_ADDR="6.6.6.6").post(self.url, {"reason": "spam"})
+        self.poll.refresh_from_db()
+        self.assertFalse(self.poll.is_hidden)
+        self.assertGreaterEqual(Report.objects.count(), REPORT_AUTO_HIDE_THRESHOLD)  # still stored for moderators
 
     def test_hidden_poll_is_invisible_to_public(self):
         Poll.objects.filter(pk=self.poll.pk).update(is_hidden=True)

@@ -1,7 +1,9 @@
 from django.contrib import admin, messages
 from django.db.models import Count, Q
+from django.http import HttpResponse
 
 from .models import MAX_OPTIONS, MIN_OPTIONS, Comment, Option, Poll, Report, Vote
+from .ratelimit import hit_rate_limit
 
 admin.site.site_header = "Kararsızım yönetim"
 admin.site.site_title = "Kararsızım yönetim"
@@ -112,3 +114,22 @@ class VoteAdmin(admin.ModelAdmin):
 
     def has_change_permission(self, request, obj=None):
         return False
+
+
+# --- Brute-force protection for /admin/login/ ----------------------------------
+# The site's own /giris/ is rate limited; Django's admin login is not, so wrap it with the
+# same per-IP and per-account limits. (config/urls.py reads admin.site.urls after this module
+# is imported by admin autodiscovery, so the wrapped view is the one that gets routed.)
+_default_admin_login = admin.site.login
+
+
+def _rate_limited_admin_login(request, extra_context=None):
+    if request.method == "POST" and (
+        hit_rate_limit(request, "login")
+        or hit_rate_limit(request, "login_account", suffix="admin:" + request.POST.get("username", "").strip().lower())
+    ):
+        return HttpResponse("Çok fazla giriş denemesi. Biraz bekleyip tekrar dene.", status=429, content_type="text/plain; charset=utf-8")
+    return _default_admin_login(request, extra_context)
+
+
+admin.site.login = _rate_limited_admin_login

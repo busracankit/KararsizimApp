@@ -52,7 +52,16 @@ Bir faz bittiğinde bu tabloyu güncelle.
 - **Karanlık mod:** CSS değişkenleri, `:root[data-theme]` + `prefers-color-scheme`; toggle `main.js`, `localStorage["theme"]`. Yeni renk eklerken token kullan (sabit hex yazma).
 - **Paylaşım görseli:** `polls/share_image.py` (Pillow, `polls/assets/fonts/PlusJakartaSans.ttf`, OFL). `/anket/<id>/paylasim.png`, og:image.
 - Sayımlar (`total_votes`, `comment_count`) korelasyonlu alt sorgu — JOIN+Count kullanma (arama/yorum join'leri sayıları bozar).
-- Oy API sözleşmesi uzantıları: `can_change`, `closed`, 403 `poll_closed`, 429 `rate_limited`, sonuçlarda isteğe bağlı `image_url`.
+- **Güvenlik incelemesi (27.09, code-review-security):**
+  - Otomatik gizleme sadece farklı **üye** şikayetlerini sayar (ziyaretçi her istekte yeni çerez alabilir).
+  - Ziyaretçi oyu: anket başına, IP başına 24 saatte 3 (`visitor_vote_per_poll`); aşınca 429 `login_required`. Üyeler ve oy değiştirme etkilenmez.
+  - Giriş sınırı hem IP (`login`) hem hesap başına (`login_account`, anahtar e-postanın hash'i); `/admin/login/` de aynı sınırla sarıldı (`polls/admin.py`).
+  - Hız sınırlayıcı önce kaydeder sonra sayar (eş zamanlı istekler birlikte geçemez); engellenen deneme silinir.
+  - IP: proxy başlıklarına sadece `TRUST_PROXY_HEADERS` (Vercel'de otomatik) açıkken güvenilir; önce `X-Forwarded-For`.
+  - Herkese açık önbelleklenen yanıtlara (`Cache-Control: public`/`s-maxage`) ziyaretçi çerezi eklenmez.
+  - `ALLOWED_HOSTS`/`CSRF_TRUSTED_ORIGINS` joker yok; `VERCEL_PROJECT_PRODUCTION_URL`/`VERCEL_BRANCH_URL`/`VERCEL_URL` kodda eklenir.
+  - POST formları gönderilince buton kilitlenir (çift tıklama); kayıtta yarış → form hatası, 500 değil.
+- Oy API sözleşmesi uzantıları: `can_change`, `closed`, 403 `poll_closed`, 429 `rate_limited` / `login_required`, sonuçlarda isteğe bağlı `image_url`.
 
 ## Geçici şeyler (unutma)
 
