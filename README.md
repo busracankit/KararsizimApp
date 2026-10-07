@@ -143,7 +143,8 @@ python manage.py test
 
 - Vercel detects Django through `manage.py`; `WSGI_APPLICATION` is the entry point.
 - `collectstatic` runs during the build, and `/static/` is served from the Vercel CDN.
-- `vercel.json` only sets the function region to **fra1 (Frankfurt)**, close to the database.
+- `vercel.json` sets the function region to **fra1 (Frankfurt)**, close to the database, and adds a daily cron that
+  requests `/`. The home page queries the database, which keeps the free Supabase project from being paused for inactivity.
 - The Python version comes from `.python-version` (3.12), and dependencies from `requirements.txt`.
 - Every push to `main` triggers a production deploy. Run new migrations against Supabase **before** pushing.
 - Set the environment variables under Vercel → project → **Settings → Environment Variables**.

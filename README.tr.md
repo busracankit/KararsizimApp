@@ -139,7 +139,8 @@ python manage.py test
 
 - Vercel, Django'yu `manage.py` üzerinden tanır; giriş noktası `WSGI_APPLICATION`'dır.
 - `collectstatic` build sırasında çalışır ve `/static/` dosyaları Vercel CDN'inden sunulur.
-- `vercel.json` yalnızca fonksiyon bölgesini **fra1 (Frankfurt)** yapar; veritabanıyla aynı bölgede olsun diye.
+- `vercel.json` fonksiyon bölgesini **fra1 (Frankfurt)** yapar; veritabanıyla aynı bölgede olsun diye. Ayrıca her gün `/`
+  adresine istek atan bir cron tanımlar. Ana sayfa veritabanını sorguladığı için ücretsiz Supabase projesi hareketsizlikten duraklatılmaz.
 - Python sürümü `.python-version` dosyasından (3.12), bağımlılıklar `requirements.txt` dosyasından gelir.
 - `main` dalına her push production deploy'u başlatır. Yeni migration varsa Supabase'e push'tan **önce** uygula.
 - Ortam değişkenleri: Vercel → proje → **Settings → Environment Variables** (yukarıdaki tablo).
